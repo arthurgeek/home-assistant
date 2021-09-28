@@ -1,0 +1,221 @@
+# Samsung TV
+# https://github.com/ollo69/ha-samsungtv-smart/
+
+switch:
+  - platform: template
+    switches:
+      netflix:
+        friendly_name: "Netflix"
+        value_template: >-
+          {{ is_state_attr('media_player.tv', 'source', 'Netflix') }}
+        icon_template: mdi:netflix
+        turn_on:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "Netflix"
+        turn_off:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "TV"
+      youtube:
+        friendly_name: "YouTube"
+        value_template: >-
+          {{ is_state_attr('media_player.tv', 'source', 'YouTube') }}
+        icon_template: mdi:youtube
+        turn_on:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "YouTube"
+        turn_off:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "TV"
+      disney_plus:
+        friendly_name: "Disney+"
+        value_template: >-
+          {{ is_state_attr('media_player.tv', 'source', 'Disney+') }}
+        icon_template: mdi:rodent
+        turn_on:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "Disney+"
+        turn_off:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "TV"
+      nintendo_switch:
+        friendly_name: "Nintendo Switch"
+        value_template: >-
+          {{ is_state_attr('media_player.tv', 'source', 'NintendoSwitch') }}
+        icon_template: mdi:nintendo-switch
+        turn_on:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "NintendoSwitch"
+        turn_off:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "TV"
+      game_console:
+        friendly_name: "Game Console"
+        value_template: >-
+          {{ is_state_attr('media_player.tv', 'source', 'Game Console') }}
+        icon_template: mdi:gamepad-variant
+        turn_on:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "Game Console"
+        turn_off:
+          service: media_player.select_source
+          data:
+            entity_id: media_player.tv
+            source: "TV"
+
+sensor:
+  - platform: history_stats
+    name: Time TV is On today
+    entity_id: media_player.tv
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Time Netflix is On today
+    entity_id: switch.netflix
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Time YouTube is On today
+    entity_id: switch.youtube
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Time Disney Plus is On today
+    entity_id: switch.disney_plus
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Time Nintendo Switch is On today
+    entity_id: switch.nintendo_switch
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Time Game Console is On today
+    entity_id: switch.game_console
+    state: "on"
+    type: time
+    start: "{{ now().replace(hour=0, minute=0, second=0) }}"
+    end: "{{ now() }}"
+
+script:
+  confirm_turn_off_disney_plus:
+    alias: Living Room · TV · Turn off Disney+?
+    use_blueprint:
+      path: homeassistant/confirmable_notification.yaml
+      input:
+        notify_device: c8654096ee4733330232705e7dd9674a
+        title: "Turn off TV?"
+        message: "Too much time spent today on Disney+. Turn it off?"
+        confirm_action:
+          - service: switch.toggle
+            target:
+              entity_id: switch.disney_plus
+  confirm_turn_off_netflix:
+    alias: Living Room · TV · Turn off Netflix?
+    use_blueprint:
+      path: homeassistant/confirmable_notification.yaml
+      input:
+        notify_device: c8654096ee4733330232705e7dd9674a
+        title: "Turn off TV?"
+        message: "Too much time spent today on Netflix. Turn it off?"
+        confirm_action:
+          - service: switch.toggle
+            target:
+              entity_id: switch.netflix
+  confirm_turn_off_youtube:
+    alias: Living Room · TV · Turn off YouTube?
+    use_blueprint:
+      path: homeassistant/confirmable_notification.yaml
+      input:
+        notify_device: c8654096ee4733330232705e7dd9674a
+        title: "Turn off YouTube?"
+        message: "Too much time spent today on YouTube. Turn it off?"
+        confirm_action:
+          - service: switch.toggle
+            target:
+              entity_id: switch.youtube
+  comfirm_turn_off_nintendo_switch:
+    alias: Living Room · TV · Turn off Nintendo Switch?
+    use_blueprint:
+      path: homeassistant/confirmable_notification.yaml
+      input:
+        notify_device: c8654096ee4733330232705e7dd9674a
+        title: "Turn off TV?"
+        message: "Too much time spent today on Nintendo Switch. Turn it off?"
+        confirm_action:
+          - service: switch.toggle
+            target:
+              entity_id: switch.nintendo_switch
+  confirm_turn_off_tv:
+    alias: Living Room · TV · Turn off Nintendo Switch?
+    use_blueprint:
+      path: homeassistant/confirmable_notification.yaml
+      input:
+        notify_device: c8654096ee4733330232705e7dd9674a
+        title: "Turn off TV?"
+        message: "Too much time spent today on TV today. Turn it off?"
+        confirm_action:
+          - service: media_player.turn_off
+            target:
+              entity_id: media_player.tv
+
+automation:
+  - alias: Living Room · TV · Too much time on TV today
+    id: f8972fa6-0cc1-4774-8bc4-bcc2796552e5
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.time_tv_is_on_today
+        above: "3.00"
+    action:
+      - service: script.confirm_turn_off_tv
+  - alias: Living Room · TV · Too much time on Netflix today
+    id: 2b2f77bc-744f-4fce-a7ad-280e5a2b4356
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.time_netflix_is_on_today
+        above: "1.00"
+    action:
+      - service: script.confirm_turn_off_netflix
+  - alias: Living Room · TV · Too much time on YouTube today
+    id: 96aa4cd0-83b1-4902-9abf-9959f115fd5f
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.time_youtube_is_on_today
+        above: "1.00"
+    action:
+      - service: script.confirm_turn_off_youtube
+  - alias: Living Room · TV · Too much time on Nintendo Switch today
+    id: 507611b5-28d7-4454-8104-898463a57f0e
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.time_nintendo_switch_is_on_today
+        above: "1.00"
+    action:
+      - service: script.confirm_turn_off_nintendo_switch

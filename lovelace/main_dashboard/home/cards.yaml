@@ -1,0 +1,130 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Navigate"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          entity: light.living_room_lights
+          show_name: false
+          icon: "mdi:sofa"
+          hold_action:
+            action: toggle
+          tap_action:
+            action: navigate
+            navigation_path: living-room
+        - type: button
+          tap_action:
+            action: navigate
+            navigation_path: master-bedroom
+          entity: light.master_bedroom_lights
+          show_name: false
+          hold_action:
+            action: toggle
+          icon: "mdi:bed-empty"
+        - type: button
+          tap_action:
+            action: navigate
+            navigation_path: kitchen
+          entity: light.kitchen
+          show_name: false
+          hold_action:
+            action: toggle
+          icon: "mdi:chef-hat"
+        - type: button
+          tap_action:
+            action: navigate
+            navigation_path: kids-bedroom
+          entity: light.kids_bedroom
+          show_name: false
+          hold_action:
+            action: toggle
+          icon: "mdi:bunk-bed"
+
+    - type: markdown
+      content: "## Weather"
+    - type: custom:weather-card
+      entity: weather.home
+      name: Berlin
+
+# Column 2
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## House Mode"
+    - type: button
+      entity: binary_sensor.house_mode
+      show_name: false
+      tap_action:
+        confirmation:
+          text: "Are you sure you want to change house mode?"
+        action: call-service
+        service: input_select.select_next
+        service_data:
+          entity_id: input_select.house_mode
+
+# Column 3
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Whole House Media"
+    - type: "custom:mini-media-player"
+      entity: media_player.living_room
+      artwork: material
+      hide:
+        power: true
+        source: true
+      speaker_group:
+        platform: sonos
+        show_group_count: true
+        expanded: true
+        entities:
+          - entity_id: media_player.living_room
+            name: "Sonos Beam"
+          - entity_id: media_player.master_bedroom
+            name: Sonos One
+          - entity_id: media_player.move
+            name: Sonos Move
+
+    - type: markdown
+      content: "## Whole House Climate"
+    - type: "custom:mini-graph-card"
+      name: Temperature
+      group_by: hour
+      hours_to_show: 24
+      animate: true
+      entities:
+        - entity: sensor.master_bedroom_temperature
+          name: Master Bedroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.living_room_temperature
+          name: Living Room
+          show_state: true
+          color: green
+          show_indicator: true
+        - entity: sensor.bathroom_temperature
+          name: Bathroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.kids_bedroom_temperature
+          name: Kids Bedroom
+          show_state: true
+          show_indicator: true
+    - type: "custom:mini-graph-card"
+      name: Air Quality
+      group_by: hour
+      hours_to_show: 24
+      animate: true
+      entities:
+        - entity: sensor.mb_purifier_air_quality
+          name: Master Bedroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.lr_purifier_air_quality
+          name: Living Room
+          show_state: true
+          color: green
+          show_indicator: true

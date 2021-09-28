@@ -1,0 +1,145 @@
+input_boolean:
+  meds_taken:
+    name: Meds have been taken
+    icon: mdi:pill
+
+automation:
+  - alias: Routine · Meds Reminder · Reset meds taken
+    id: a1966081-20f2-4017-be8f-c23cfa7e9a61
+    trigger:
+      platform: time
+      at: "00:01:00"
+    action:
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.meds_taken
+
+  - alias: Routine · Meds Reminder · Mark meds as taken from button
+    id: d7185891-c1ff-4b69-990d-dbf803f6dad8
+    use_blueprint:
+      path: Drafted/aqara-buttons-all-in-one-zigbee2mqtt.yaml
+      input:
+        action_sensor: sensor.medicine_button_click
+        single_action:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.meds_taken
+
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken 1st
+    id: 03f2d047-9829-44d3-aad3-4d6ae9075c08
+    trigger:
+      - platform: time
+        at: "09:18:00"
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.meds_taken
+          state: "off"
+        - condition: state
+          entity_id: person.arthur
+          state: "home"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Take your meds!"
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: "Arthur, you forgot to take your meds today!"
+          data:
+            type: tts
+
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken 2nd
+    id: 5210f579-da74-460e-88a8-78bf545a38fb
+    trigger:
+      - platform: time
+        at: "10:18:00"
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.meds_taken
+          state: "off"
+        - condition: state
+          entity_id: person.arthur
+          state: "home"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Take your meds!"
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: "Arthur forgot to take his meds today!"
+          data:
+            type: tts
+
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken 3rd
+    id: d2dfd124-c820-4778-acbf-41b8d54d6cc5
+    trigger:
+      - platform: time
+        at: "12:18:00"
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.meds_taken
+          state: "off"
+        - condition: state
+          entity_id: person.arthur
+          state: "home"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Take your meds!"
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: "Arthur, take your meds!"
+          data:
+            type: tts
+
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken 4th
+    id: a6493df0-8ede-4563-a170-67b9b33c6499
+    trigger:
+      - platform: time
+        at: "18:18:00"
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.meds_taken
+          state: "off"
+        - condition: state
+          entity_id: person.arthur
+          state: "home"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Are you alive? Take your meds!"
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: "Arthur, are you ok? You haven' taken your meds today!"
+          data:
+            type: tts
+
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken 5th
+    id: f447bd1f-623b-4f31-819e-448ae3f29b0b
+    trigger:
+      - platform: time
+        at: "21:18:00"
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: input_boolean.meds_taken
+          state: "off"
+        - condition: state
+          entity_id: person.arthur
+          state: "home"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Are you alive? Take your meds!"
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: "Arthur, are you listening to me? Take. Your. Meds! Now!"
+          data:
+            type: tts

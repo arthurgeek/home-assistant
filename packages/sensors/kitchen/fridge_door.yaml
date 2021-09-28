@@ -1,0 +1,22 @@
+automation:
+  - alias: Fridge · Door open for 2 minutes
+    id: 018265b3-c137-4a32-af1d-abeadf988820
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.fridge_door
+        to: "on"
+        for:
+          hours: 0
+          minutes: 2
+          seconds: 0
+    action:
+      - service: notify.alexa_media_alexa_kitchen
+        data:
+          message: The fridge door is open!
+          data:
+            type: tts
+
+homeassistant:
+  customize:
+    binary_sensor.fridge_door:
+      device_class: door

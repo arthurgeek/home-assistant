@@ -1,0 +1,29 @@
+# Generic ignores
+*.log
+*.log.*
+*.db
+*.db-shm
+*.db-wal
+*.pyc
+._*
+__pycache__
+
+# Directory (contents) ignores
+.cloud
+.storage
+deps
+tts
+image
+custom_components
+www/community
+glances
+zigbee2mqtt
+
+# Specific file ignores
+ip_bans.yaml
+known_devices.yaml
+secrets.yaml
+*.json
+
+# Specific keeps
+!.gitkeep

@@ -1,0 +1,28 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Lights"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          show_name: false
+          entity: light.kitchen
+
+    - type: markdown
+      content: "## Presence"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          show_name: false
+          entity: binary_sensor.kitchen_motion
+
+# Column 2
+- type: vertical-stack
+  cards: []
+
+# Column 3
+- type: vertical-stack
+  cards: []

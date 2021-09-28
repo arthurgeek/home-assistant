@@ -1,0 +1,224 @@
+input_select:
+  presence_state_arthur:
+    name: Presence Arthur
+    options:
+      - Just Arrived
+      - Just Left
+      - Home
+      - Away
+      - Extended Away
+  presence_state_suellen:
+    name: Presence Suellen
+    options:
+      - Just Arrived
+      - Just Left
+      - Home
+      - Away
+      - Extended Away
+
+homeassistant:
+  customize:
+    device_tracker.keys_arthur:
+      friendly_name: Arthur's Keys
+      icon: mdi:key-variant
+    device_tracker.backpack_arthur:
+      friendly_name: Arthur's Backpack
+      icon: mdi:bag-personal
+    device_tracker.wallet_arthur:
+      friendly_name: Arthur's Wallet
+      icon: mdi:wallet
+
+group:
+  everyone:
+    entities:
+      - sensor.arthur_status
+      - sensor.suellen_status
+
+binary_sensor:
+  - platform: template
+    sensors:
+      anyone_home:
+        friendly_name: "Is anyone Home?"
+        value_template: >-
+          {{ is_state('person.arthur', 'home')
+          or is_state('person.suellen', 'home') }}
+      everyone_home:
+        friendly_name: "Is everyone Home?"
+        value_template: >-
+          {{ is_state('person.arthur', 'home')
+          and is_state('person.suellen', 'home') }}
+
+sensor:
+  - platform: template
+    sensors:
+      arthur_status:
+        value_template: "{{ states.input_select.presence_state_arthur.state }}"
+        friendly_name: "Arthur"
+
+      suellen_status:
+        value_template: "{{ states.input_select.presence_state_suellen.state }}"
+        friendly_name: "Suellen"
+
+  - platform: history_stats
+    name: Time Suellen spent outside home this week
+    entity_id: person.suellen
+    state: "not_home"
+    type: time
+    start: >-
+      {{
+        as_timestamp(now().replace(hour=0, minute=0, second=0))
+          - now().weekday() * 86400
+      }}
+    end: "{{ now() }}"
+
+  - platform: history_stats
+    name: Time Arthur spent outside home this week
+    entity_id: person.arthur
+    state: "not_home"
+    type: time
+    start: >-
+      {{
+        as_timestamp(now().replace(hour=0, minute=0, second=0))
+        - now().weekday() * 86400
+      }}
+    end: "{{ now() }}"
+
+automation:
+  - alias: Presence · Mark person as just arrived
+    id: 09a30251-738b-4641-a9eb-9b5e7af25693
+    trigger:
+      - platform: state
+        entity_id: person.arthur
+        from: "not_home"
+        to: "home"
+      - platform: state
+        entity_id: person.suellen
+        from: "not_home"
+        to: "home"
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: >
+            {% if trigger.entity_id == "person.arthur" %}
+              input_select.presence_state_arthur
+            {% else %}
+              input_select.presence_state_suellen
+            {% endif %}
+          option: >
+            {% if trigger.entity_id == "person.arthur" %}
+              {% if states.input_select.presence_state_arthur.state ==
+                                                                  "Just Left" %}
+                Home
+              {% else %}
+                Just Arrived
+              {% endif %}
+            {% else %}
+              {% if states.input_select.presence_state_suellen.state ==
+                                                                  "Just Left" %}
+                Home
+              {% else %}
+                Just Arrived
+              {% endif %}
+            {% endif %}
+
+  - alias: Presence · Mark person as home
+    id: 4e1288dc-4754-4fa8-aa58-55638cfa5841
+    trigger:
+      - platform: state
+        entity_id: input_select.presence_state_arthur
+        to: "Just Arrived"
+        for:
+          minutes: 10
+      - platform: state
+        entity_id: input_select.presence_state_suellen
+        to: "Just Arrived"
+        for:
+          minutes: 10
+      - platform: state
+        entity_id: input_select.presence_state_arthur
+        from: "Just Left"
+        to: "Just Arrived"
+      - platform: state
+        entity_id: input_select.presence_state_suellen
+        from: "Just Left"
+        to: "Just Arrived"
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: >
+            {% if trigger.entity_id == "person.arthur" %}
+              input_select.presence_state_arthur
+            {% else %}
+              input_select.presence_state_suellen
+            {% endif %}
+          option: Home
+
+  - alias: Presence · Mark person as just left
+    id: fd63dcf5-741a-4848-9028-22ac7f34cf37
+    trigger:
+      - platform: state
+        entity_id: person.arthur
+        from: "home"
+        to: "not_home"
+      - platform: state
+        entity_id: person.suellen
+        from: "home"
+        to: "not_home"
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: >
+            {% if trigger.entity_id == "person.arthur" %}
+              input_select.presence_state_arthur
+            {% else %}
+              input_select.presence_state_suellen
+            {% endif %}
+          option: Just Left
+
+  - alias: Presence · Mark person as away
+    id: 86d6640f-9c3f-4941-968d-ebf6f861ae89
+    trigger:
+      - platform: state
+        entity_id: input_select.presence_state_arthur
+        to: "Just Left"
+        for:
+          minutes: 10
+      - platform: state
+        entity_id: input_select.presence_state_suellen
+        to: "Just Left"
+        for:
+          minutes: 10
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: >
+            {% if trigger.entity_id == "person.arthur" %}
+              input_select.presence_state_arthur
+            {% else %}
+              input_select.presence_state_suellen
+            {% endif %}
+          option: Away
+
+  - alias: Presence · Mark person as extended away
+    id: 64ee8a80-650b-4b2f-bab0-4778546bf961
+    trigger:
+      - platform: state
+        entity_id: input_select.presence_state_arthur
+        to: "Away"
+        for:
+          hours: 24
+      - platform: state
+        entity_id: input_select.presence_state_suellen
+        to: "Away"
+        for:
+          hours: 24
+    action:
+      - service: input_select.select_option
+        data_template:
+          entity_id: >
+            {% if trigger.entity_id == "person.arthur" %}
+              input_select.presence_state_arthur
+            {% else %}
+              input_select.presence_state_suellen
+            {% endif %}
+          option: Extended Away

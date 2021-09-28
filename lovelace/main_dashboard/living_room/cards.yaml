@@ -1,0 +1,176 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Lights"
+
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          entity: light.tv
+          show_name: false
+          icon: "mdi:television"
+        - type: button
+          entity: light.living_room
+          show_name: false
+
+    - type: markdown
+      content: "## Devices"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          entity: fan.living_room_airpurifier
+          show_name: false
+
+    - type: markdown
+      content: "## Presence"
+
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          entity: binary_sensor.living_room_motion
+          show_name: false
+
+# Column 2
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## TV"
+
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          entity: media_player.tv
+          show_name: false
+          tap_action:
+            action: call-service
+            service: media_player.toggle
+            service_data:
+              entity_id: media_player.tv
+          hold_action:
+            action: none
+        - type: button
+          entity: switch.netflix
+          show_name: false
+          hold_action:
+            action: none
+        - type: button
+          entity: switch.youtube
+          show_name: false
+          hold_action:
+            action: none
+        - type: button
+          entity: switch.disney_plus
+          show_name: false
+          hold_action:
+            action: none
+        - type: button
+          entity: switch.nintendo_switch
+          show_name: false
+          hold_action:
+            action: none
+        - type: button
+          entity: switch.game_console
+          show_name: false
+          hold_action:
+            action: none
+
+    - type: markdown
+      content: "## Climate"
+    - type: horizontal-stack
+      cards:
+        - type: "custom:mini-graph-card"
+          name: "Temperature"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.living_room_temperature
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.living_room_temperature
+              aggregate_func: min
+              name: Min
+            - entity: sensor.living_room_temperature
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+        - type: "custom:mini-graph-card"
+          name: "Humidity"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.living_room_humidity
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.living_room_humidity
+              aggregate_func: min
+              name: Min
+            - entity: sensor.living_room_humidity
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+    - type: markdown
+      content: "## Sensors"
+    - type: horizontal-stack
+      cards:
+        - type: "custom:mini-graph-card"
+          name: Light Level
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.living_room_light_level
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.living_room_light_level
+              aggregate_func: min
+              name: Min
+            - entity: sensor.living_room_light_level
+              aggregate_func: avg
+              name: Avg
+              color: green
+        - type: "custom:mini-graph-card"
+          name: Air Quality
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.lr_purifier_air_quality
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.lr_purifier_air_quality
+              aggregate_func: min
+              name: Min
+            - entity: sensor.lr_purifier_air_quality
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+# Column 3
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Media"
+
+    - type: "custom:mini-media-player"
+      entity: media_player.living_room
+      artwork: material
+      hide:
+        power: true
+        source: true

@@ -1,0 +1,21 @@
+# Lovelace animated weather card
+# https://github.com/bramkragten/weather-card
+#
+- url: https://cdn.jsdelivr.net/gh/bramkragten/weather-card/dist/weather-card.min.js
+  type: module
+
+# Noctis font
+- url: "https://fonts.googleapis.com/css?family=Raleway"
+  type: css
+
+# Hacs Plugins
+- url: /hacsfiles/mini-media-player/mini-media-player-bundle.js
+  type: module
+- url: /hacsfiles/kb-better-graph-colors/kb-better-graph-colors.js
+  type: module
+- url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js
+  type: module
+- url: /hacsfiles/lovelace-swipe-navigation/swipe-navigation.js
+  type: module
+- url: /hacsfiles/lovelace-layout-card/layout-card.js
+  type: module

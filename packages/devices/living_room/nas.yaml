@@ -1,0 +1,23 @@
+# The synology_dsm sensor platform provides access to various statistics
+# from your Synology NAS
+#
+# https://www.home-assistant.io/integrations/synology_dsm/
+#
+
+device_tracker:
+  - platform: ping
+    hosts:
+      synology_nas: !secret synology_ip
+
+automation:
+  - alias: Notify when NAS disconnects from network
+    trigger:
+      - platform: state
+        entity_id: device_tracker.synology_nas
+        from: home
+        to: not_home
+        for: 00:05
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "NAS is not in the network"

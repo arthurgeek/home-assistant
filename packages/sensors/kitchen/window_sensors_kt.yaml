@@ -1,0 +1,8 @@
+binary_sensor:
+  - platform: template
+    sensors:
+      kitchen_windows:
+        device_class: window
+        value_template: >-
+          {{ is_state('binary_sensor.kitchen_left_window', 'on')
+              or is_state('binary_sensor.kitchen_right_window', 'on') }}

@@ -1,0 +1,84 @@
+input_select:
+  house_mode:
+    name: House mode
+    icon: mdi:home-analytics
+    options:
+      - day
+      - night
+
+binary_sensor:
+  - platform: template
+    sensors:
+      house_mode:
+        friendly_name: House mode
+        value_template: "{{ states('input_select.house_mode') }}"
+        icon_template: >-
+          {% if is_state('input_select.house_mode', 'day') %}
+            mdi:weather-sunny
+          {% else %}
+            mdi:weather-night
+          {% endif %}
+
+script:
+  change_house_mode:
+    alias: House mode · Switch
+    sequence:
+      - service: input_select.select_next
+        data:
+          entity_id: input_select.house_mode
+
+automation:
+  - alias: House mode · Enter night mode
+    id: b6954e20-c7fd-4972-ac98-10807552c4b8
+    variables:
+      sleep_time: 1800
+      current_volume_mb: >-
+        {{ state_attr('media_player.master_bedroom', 'volume_level') }}
+      current_volume_move: >-
+        {{ state_attr('media_player.move', 'volume_level') }}
+    trigger:
+      platform: state
+      entity_id: input_select.house_mode
+      to: "night"
+    action:
+      - service: light.turn_off
+        target:
+          area_id: master_bedroom
+
+      - service: sonos.join
+        data:
+          master: media_player.master_bedroom
+          entity_id: media_player.move
+
+      - service: sonos.set_sleep_timer
+        target:
+          area_id: master_bedroom
+        data:
+          sleep_time: >-
+            {{ sleep_time }}
+
+      - service: media_player.volume_set
+        target:
+          area_id: master_bedroom
+        data:
+          volume_level: 0.2
+
+      - service: media_player.select_source
+        target:
+          area_id: master_bedroom
+        data:
+          source: Sleep
+
+      - delay: "{{ sleep_time + 60 }}"
+
+      - service: media_player.volume_set
+        data:
+          entity_id:
+            - media_player.master_bedroom
+          volume_level: "{{ current_volume_mb }}"
+
+      - service: media_player.volume_set
+        data:
+          entity_id:
+            - media_player.move
+          volume_level: "{{ current_volume_move }}"

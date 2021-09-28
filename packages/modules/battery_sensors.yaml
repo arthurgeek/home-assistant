@@ -1,0 +1,16 @@
+automation:
+  - alias: Low battery level detection & notification for all battery sensors
+    id: b32860d2-70ce-4e8c-a083-b0714305600e
+    use_blueprint:
+      path: sbyx/low-battery-level-notification-for-all-battery-sensors.yaml
+      input:
+        day: "0"
+        exclude:
+          entity_id:
+            - sensor.android_arthur_battery_level
+            - sensor.android_suellen_battery_level
+        actions:
+          - service: notify.mobile_app_android_arthur
+            data:
+              message: "Replace battery of {{sensors}}"
+        threshold: "15"

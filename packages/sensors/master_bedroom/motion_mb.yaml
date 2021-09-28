@@ -1,0 +1,6 @@
+group:
+  master_bedroom_motion:
+    name: "Master Bedroom Motion Sensors"
+    entities:
+      - binary_sensor.master_bedroom_motion
+      - binary_sensor.computer_motion

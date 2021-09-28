@@ -1,0 +1,307 @@
+# Philips Air Purifier
+# https://github.com/betaboon/philips-airpurifier
+# based on https://github.com/GeorgeSG/sarah
+# but updated to newer firmware
+
+fan:
+  - platform: philips_airpurifier_coap
+    host: !secret master_bedroom_air_purifier_host
+    model: ac2729
+    name: Master Bedroom AirPurifier
+
+input_boolean:
+  mb_purifier_turned_on_for_bad_air:
+    name: Master Bedroom Purifier enabled for bad air
+
+sensor:
+  - platform: template
+    sensors:
+      mb_purifier_air_quality:
+        friendly_name: Master Bedroom Air quality
+        value_template: >-
+          {{ state_attr('fan.master_bedroom_airpurifier', 'pm25') }}
+        icon_template: mdi:weather-windy
+      mb_purifier_humidity:
+        friendly_name: Master Bedroom Purifier Humidity
+        unit_of_measurement: "%"
+        device_class: humidity
+        value_template: >-
+          {{ state_attr('fan.master_bedroom_airpurifier', 'humidity') }}
+        icon_template: mdi:water
+      mb_purifier_function:
+        friendly_name: Master Bedroom Purifier Function
+        value_template: >-
+          {{ state_attr('fan.master_bedroom_airpurifier', 'function') }}
+        icon_template: >-
+          {% set device = 'fan.master_bedroom_airpurifier' %}
+          {% if state_attr(device, 'function') == 'Purification' %}
+            {{ 'mdi:air-purifier' }}
+          {% else %}
+            {{ 'mdi:air-humidifier' }}
+          {% endif %}
+      mb_purifier_pre_filter:
+        friendly_name: Master Bedroom Purifier Pre-filter
+        value_template: >-
+          {% set device = 'fan.master_bedroom_airpurifier' %}
+          {{ state_attr(device, 'filter_pre_remaining_raw') }}
+        icon_template: mdi:air-filter
+      mb_purifier_wick_filter:
+        friendly_name: Master Bedroom Purifier Wick filter
+        value_template: >-
+          {% set device = 'fan.master_bedroom_airpurifier' %}
+          {{ state_attr(device, 'filter_wick_remaining_raw') }}
+        icon_template: mdi:air-filter
+      mb_purifier_carbon_filter:
+        friendly_name: Master Bedroom Purifier Carbon filter
+        value_template: >-
+          {% set device = 'fan.master_bedroom_airpurifier' %}
+          {{ state_attr(device, 'filter_active_carbon_remaining_raw') }}
+        icon_template: mdi:air-filter
+      mb_purifier_hepa_filter:
+        friendly_name: Master Bedroom Purifier HEPA filter
+        value_template: >-
+          {% set device = 'fan.master_bedroom_airpurifier' %}
+          {{ state_attr(device, 'filter_hepa_remaining_raw')}}
+        icon_template: mdi:air-filter
+
+binary_sensor:
+  - platform: template
+    sensors:
+      mb_purifier_child_lock:
+        friendly_name: Master Bedroom Child Lock
+        value_template: >-
+          {{ state_attr('fan.master_bedroom_airpurifier', 'child_lock') }}
+        icon_template: mdi:lock-check
+      mb_purifier_out_of_water:
+        friendly_name: Master Bedroom Purifier Water level
+        device_class: problem
+        value_template: >-
+          {{ state_attr('fan.master_bedroom_airpurifier', 'water_level') == 0 }}
+      mb_purifier_filter_needs_change:
+        friendly_name: Master Bedroom Purifier Filter needs change
+        device_class: problem
+        value_template: >-
+          {{ is_state('sensor.mb_purifier_pre_filter', '0')
+              or is_state('sensor.mb_purifier_wick_filter', '0')
+              or is_state('sensor.mb_purifier_carbon_filter', '0')
+              or is_state('sensor.mb_purifier_hepa_filter', '0') }}
+
+script:
+  mb_purifier_toggle_function:
+    alias: Master Bedroom · Purifier · Toggle function
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.mb_purifier_out_of_water
+        state: "off"
+      - service: philips_airpurifier_coap.set_function
+        data_template:
+          entity_id: fan.master_bedroom_airpurifier
+          function: >-
+            {% set device = 'fan.master_bedroom_airpurifier' %}
+            {% if state_attr(device, 'function') == 'Purification' %}
+              {{ 'purification_humidification' }}
+            {% else %}
+              {{ 'purification' }}
+            {% endif %}
+
+automation:
+  - alias: Master Bedroom · Purifier · On start · Sync and update state
+    id: ab6978d2-4503-4247-ab3f-c003188003be
+    trigger:
+      platform: state
+      entity_id: fan.master_bedroom_airpurifier
+      to: "on"
+    action:
+      - service: philips_airpurifier_coap.set_child_lock_on
+        data:
+          entity_id: fan.master_bedroom_airpurifier
+      - choose:
+          - conditions:
+              - condition: time
+                after: "22:00:00"
+                before: "08:00:00"
+            sequence:
+              - service: philips_airpurifier_coap.set_display_backlight_off
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+              - service: philips_airpurifier_coap.set_light_brightness
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+                  brightness: 0
+          - conditions:
+              - condition: time
+                after: "08:00:00"
+                before: "22:00:00"
+            sequence:
+              - service: philips_airpurifier_coap.set_display_backlight_on
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+              - service: philips_airpurifier_coap.set_light_brightness
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+                  brightness: 75
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.mb_purifier_out_of_water
+                state: "on"
+            sequence:
+              - service: philips_airpurifier_coap.set_function
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+                  function: "purification"
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.master_bedroom_windows
+                state: "on"
+            sequence:
+              - service: fan.turn_off
+                data:
+                  entity_id: fan.master_bedroom_airpurifier
+
+  - alias: Master Bedroom · Purifier · Turn on · Low humidity
+    id: 09f96b53-0268-4a09-8384-ab9fe2f284da
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.mb_purifier_humidity
+      below: 30
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.mb_purifier_out_of_water
+          state: "off"
+        - condition: state
+          entity_id: fan.master_bedroom_airpurifier
+          state: "off"
+        - condition: state
+          entity_id: binary_sensor.anyone_home
+          state: "on"
+        - condition: state
+          entity_id: binary_sensor.master_bedroom_windows
+          state: "off"
+    action:
+      - service: fan.turn_on
+        entity_id: fan.master_bedroom_airpurifier
+      - service: philips_airpurifier_coap.set_function
+        data:
+          entity_id: fan.master_bedroom_airpurifier
+          function: "purification_humidification"
+
+  - alias: Master Bedroom · Purifier · Turn on · Low air quality
+    id: 8e5f2edb-8a6b-49c6-bffc-5220792d4621
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.mb_purifier_air_quality
+      above: 20
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.anyone_home
+          state: "on"
+        - condition: state
+          entity_id: fan.master_bedroom_airpurifier
+          state: "off"
+        - condition: state
+          entity_id: binary_sensor.master_bedroom_windows
+          state: "off"
+    action:
+      - service: fan.turn_on
+        entity_id: fan.master_bedroom_airpurifier
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.mb_purifier_turned_on_for_bad_air
+      - condition: state
+        entity_id: binary_sensor.mb_purifier_out_of_water
+        state: "off"
+      - service: philips_airpurifier_coap.set_function
+        data:
+          entity_id: fan.master_bedroom_airpurifier
+          function: "purification_humidification"
+
+  - alias: Master Bedroom · Purifier · Turn off · Window opened
+    id: 69dbaa4f-33e7-459b-8ff2-2881e39e2bb6
+    trigger:
+      platform: state
+      entity_id: binary_sensor.master_bedroom_windows
+      from: "off"
+      to: "on"
+    condition:
+      - condition: state
+        entity_id: fan.master_bedroom_airpurifier
+        state: "on"
+    action:
+      - service: fan.turn_off
+        entity_id: fan.master_bedroom_airpurifier
+
+  - alias: Master Bedroom · Purifier · Turn off · Okay humidity
+    id: 8ca5a29a-0e99-4a61-9345-fab7ed03bdc3
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.mb_purifier_humidity
+      above: 50
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: fan.master_bedroom_airpurifier
+          state: "on"
+        - condition: state
+          entity_id: sensor.mb_purifier_function
+          state: "purification_humidification"
+        - condition: numeric_state
+          entity_id: sensor.mb_purifier_air_quality
+          below: 20
+    action:
+      - service: fan.turn_off
+        entity_id: fan.master_bedroom_airpurifier
+
+  - alias: Master Bedroom · Purifier · Turn off · Air quality returned to normal
+    id: 73c9192d-09c6-4fe0-b820-d395a9767238
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.mb_purifier_air_quality
+      below: 10
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: fan.master_bedroom_airpurifier
+          state: "on"
+        - condition: state
+          entity_id: input_boolean.mb_purifier_turned_on_for_bad_air
+          state: "on"
+    action:
+      - service: fan.turn_off
+        entity_id: fan.master_bedroom_airpurifier
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.mb_purifier_turned_on_for_bad_air
+
+  - alias: Master Bedroom · Purifier · Turn on child lock 45s after turning off
+    id: 4eed5d8c-669f-44a4-b630-c7bef05a5d94
+    trigger:
+      platform: state
+      entity_id: binary_sensor.mb_purifier_child_lock
+      to: "off"
+      for: "00:00:45"
+    condition:
+      - condition: state
+        entity_id: fan.master_bedroom_airpurifier
+        state: "on"
+    action:
+      - service: philips_airpurifier_coap.set_child_lock_on
+        data:
+          entity_id: fan.master_bedroom_airpurifier
+
+  - alias: Master Bedroom · Purifier · Notify · Filter needs change
+    id: 7d54b642-968e-434b-89ea-553c08313749
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.mb_purifier_filter_needs_change
+        from: "off"
+        to: "on"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Master Bedroom Purifier filter needs change"

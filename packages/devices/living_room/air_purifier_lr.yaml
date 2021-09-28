@@ -1,0 +1,322 @@
+# Philips Air Purifier
+# https://github.com/betaboon/philips-airpurifier
+# based on https://github.com/GeorgeSG/sarah
+# but updated to newer firmware
+
+fan:
+  - platform: philips_airpurifier_coap
+    host: !secret living_room_air_purifier_host
+    model: ac2729
+    name: Living Room AirPurifier
+
+input_boolean:
+  lr_purifier_turned_on_for_bad_air:
+    name: Living Room Purifier enabled for bad air
+
+sensor:
+  - platform: template
+    sensors:
+      lr_purifier_air_quality:
+        friendly_name: Living Room Air quality
+        value_template: >-
+          {{ state_attr('fan.living_room_airpurifier', 'pm25') }}
+        icon_template: mdi:weather-windy
+      lr_purifier_humidity:
+        friendly_name: Living Room Purifier Humidity
+        unit_of_measurement: "%"
+        device_class: humidity
+        value_template: >-
+          {{ state_attr('fan.living_room_airpurifier', 'humidity') }}
+        icon_template: mdi:water
+      lr_purifier_function:
+        friendly_name: Living Room Purifier Function
+        value_template: >-
+          {{ state_attr('fan.living_room_airpurifier', 'function') }}
+        icon_template: >-
+          {% set device = 'fan.living_room_airpurifier' %}
+          {% if state_attr(device, 'function') == 'Purification' %}
+            {{ 'mdi:air-purifier' }}
+          {% else %}
+            {{ 'mdi:air-humidifier' }}
+          {% endif %}
+      lr_purifier_pre_filter:
+        friendly_name: Living Room Purifier Pre-filter
+        value_template: >-
+          {% set device = 'fan.living_room_airpurifier' %}
+          {{ state_attr(device, 'filter_pre_remaining_raw') }}
+        icon_template: mdi:air-filter
+      lr_purifier_wick_filter:
+        friendly_name: Living Room Purifier Wick filter
+        value_template: >-
+          {% set device = 'fan.living_room_airpurifier' %}
+          {{ state_attr(device, 'filter_wick_remaining_raw') }}
+        icon_template: mdi:air-filter
+      lr_purifier_carbon_filter:
+        friendly_name: Living Room Purifier Carbon filter
+        value_template: >-
+          {% set device = 'fan.living_room_airpurifier' %}
+          {{ state_attr(device, 'filter_active_carbon_remaining_raw') }}
+        icon_template: mdi:air-filter
+      lr_purifier_hepa_filter:
+        friendly_name: Living Room Purifier HEPA filter
+        value_template: >-
+          {% set device = 'fan.living_room_airpurifier' %}
+          {{ state_attr(device, 'filter_hepa_remaining_raw')}}
+        icon_template: mdi:air-filter
+
+binary_sensor:
+  - platform: template
+    sensors:
+      lr_purifier_child_lock:
+        friendly_name: Living Room Child Lock
+        value_template: >-
+          {{ state_attr('fan.living_room_airpurifier', 'child_lock') }}
+        icon_template: mdi:lock-check
+      lr_purifier_out_of_water:
+        friendly_name: Living Room Purifier Water level
+        device_class: problem
+        value_template: >-
+          {{ state_attr('fan.living_room_airpurifier', 'water_level') == 0 }}
+      lr_purifier_filter_needs_change:
+        friendly_name: Living Room Purifier Filter needs change
+        device_class: problem
+        value_template: >-
+          {{ is_state('sensor.lr_purifier_pre_filter', '0')
+              or is_state('sensor.lr_purifier_wick_filter', '0')
+              or is_state('sensor.lr_purifier_carbon_filter', '0')
+              or is_state('sensor.lr_purifier_hepa_filter', '0') }}
+
+script:
+  lr_purifier_toggle_function:
+    alias: Living Room · Purifier · Toggle function
+    sequence:
+      - condition: state
+        entity_id: binary_sensor.lr_purifier_out_of_water
+        state: "off"
+      - service: philips_airpurifier_coap.set_function
+        data_template:
+          entity_id: fan.living_room_airpurifier
+          function: >-
+            {% set device = 'fan.living_room_airpurifier' %}
+            {% if state_attr(device, 'function') == 'Purification' %}
+              {{ 'purification_humidification' }}
+            {% else %}
+              {{ 'purification' }}
+            {% endif %}
+
+automation:
+  - alias: Living Room · Purifier · On start · Sync and update state
+    id: 7e54a67d-3f01-49a4-81f9-fbcff2cc3ccd
+    trigger:
+      platform: state
+      entity_id: fan.living_room_airpurifier
+      to: "on"
+    action:
+      - service: philips_airpurifier_coap.set_child_lock_on
+        data:
+          entity_id: fan.living_room_airpurifier
+      - choose:
+          - conditions:
+              - condition: time
+                after: "22:00:00"
+                before: "08:00:00"
+            sequence:
+              - service: philips_airpurifier_coap.set_display_backlight_off
+                data:
+                  entity_id: fan.living_room_airpurifier
+              - service: philips_airpurifier_coap.set_light_brightness
+                data:
+                  entity_id: fan.living_room_airpurifier
+                  brightness: 0
+          - conditions:
+              - condition: time
+                after: "08:00:00"
+                before: "22:00:00"
+            sequence:
+              - service: philips_airpurifier_coap.set_display_backlight_on
+                data:
+                  entity_id: fan.living_room_airpurifier
+              - service: philips_airpurifier_coap.set_light_brightness
+                data:
+                  entity_id: fan.living_room_airpurifier
+                  brightness: 75
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.lr_purifier_out_of_water
+                state: "on"
+            sequence:
+              - service: philips_airpurifier_coap.set_function
+                data:
+                  entity_id: fan.living_room_airpurifier
+                  function: "purification"
+      - choose:
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity_id: binary_sensor.living_room_windows
+                    state: "on"
+                  - condition: state
+                    entity_id: binary_sensor.kitchen_windows
+                    state: "on"
+            sequence:
+              - service: fan.turn_off
+                data:
+                  entity_id: fan.living_room_airpurifier
+
+  - alias: Living Room · Purifier · Turn on · Low humidity
+    id: 1f0b0770-bc58-48ae-a114-8821e407f5a1
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.lr_purifier_humidity
+      below: 30
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.lr_purifier_out_of_water
+          state: "off"
+        - condition: state
+          entity_id: fan.living_room_airpurifier
+          state: "off"
+        - condition: state
+          entity_id: binary_sensor.anyone_home
+          state: "on"
+        - condition: and
+          conditions:
+            - condition: state
+              entity_id: binary_sensor.kitchen_windows
+              state: "off"
+            - condition: state
+              entity_id: binary_sensor.living_room_windows
+              state: "off"
+    action:
+      - service: fan.turn_on
+        entity_id: fan.living_room_airpurifier
+      - service: philips_airpurifier_coap.set_function
+        data:
+          entity_id: fan.living_room_airpurifier
+          function: "purification_humidification"
+
+  - alias: Living Room · Purifier · Turn on · Low air quality
+    id: 7f17577f-c673-44eb-8fd7-a0c4d4143510
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.lr_purifier_air_quality
+      above: 20
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: binary_sensor.anyone_home
+          state: "on"
+        - condition: state
+          entity_id: fan.living_room_airpurifier
+          state: "off"
+        - condition: and
+          conditions:
+            - condition: state
+              entity_id: binary_sensor.kitchen_windows
+              state: "off"
+            - condition: state
+              entity_id: binary_sensor.living_room_windows
+              state: "off"
+    action:
+      - service: fan.turn_on
+        entity_id: fan.living_room_airpurifier
+      - service: input_boolean.turn_on
+        entity_id: input_boolean.lr_purifier_turned_on_for_bad_air
+      - condition: state
+        entity_id: binary_sensor.lr_purifier_out_of_water
+        state: "off"
+      - service: philips_airpurifier_coap.set_function
+        data:
+          entity_id: fan.living_room_airpurifier
+          function: "purification_humidification"
+
+  - alias: Living Room · Purifier · Turn off · Window opened
+    id: 3607b831-1737-4bee-8235-73df8da554a2
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.living_room_windows
+        from: "off"
+        to: "on"
+      - platform: state
+        entity_id: binary_sensor.kitchen_windows
+        from: "off"
+        to: "on"
+    action:
+      - service: fan.turn_off
+        entity_id: fan.living_room_airpurifier
+
+  - alias: Living Room · Purifier · Turn off · Okay humidity
+    id: af3f8bd5-aa72-46f8-a81e-670f9a051967
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.lr_purifier_humidity
+      above: 50
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: fan.living_room_airpurifier
+          state: "on"
+        - condition: state
+          entity_id: sensor.lr_purifier_function
+          state: "purification_humidification"
+        - condition: numeric_state
+          entity_id: sensor.lr_purifier_air_quality
+          below: 20
+    action:
+      - service: fan.turn_off
+        entity_id: fan.living_room_airpurifier
+
+  - alias: Living Room · Purifier · Turn off · Air quality returned to normal
+    id: 955202ae-6a13-4129-8b0d-bf626c484384
+    trigger:
+      platform: numeric_state
+      entity_id: sensor.lr_purifier_air_quality
+      below: 10
+    condition:
+      condition: and
+      conditions:
+        - condition: state
+          entity_id: fan.living_room_airpurifier
+          state: "on"
+        - condition: state
+          entity_id: input_boolean.lr_purifier_turned_on_for_bad_air
+          state: "on"
+    action:
+      - service: fan.turn_off
+        entity_id: fan.living_room_airpurifier
+      - service: input_boolean.turn_off
+        entity_id: input_boolean.lr_purifier_turned_on_for_bad_air
+
+  - alias: Living Room · Purifier · Turn on child lock 45s after turning off
+    id: 6bd1fac0-4190-4ae3-9c61-c2efe4160896
+    trigger:
+      platform: state
+      entity_id: binary_sensor.lr_purifier_child_lock
+      to: "off"
+      for: "00:00:45"
+    condition:
+      - condition: state
+        entity_id: fan.living_room_airpurifier
+        state: "on"
+    action:
+      - service: philips_airpurifier_coap.set_child_lock_on
+        data:
+          entity_id: fan.living_room_airpurifier
+
+  - alias: Living Room · Purifier · Notify · Filter needs change
+    id: 27126552-cb5c-42c1-af9e-a5123e827f8f
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.lr_purifier_filter_needs_change
+        from: "off"
+        to: "on"
+    action:
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: "Living Room Purifier filter needs change"

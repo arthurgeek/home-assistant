@@ -1,0 +1,42 @@
+switch:
+  - platform: template
+    switches:
+      sonos_beam_night_sound:
+        friendly_name: "Sonos Beam Night Sound"
+        value_template: "{{ state_attr('media_player.living_room', 'night_sound') }}"
+        icon_template: mdi:weather-night
+        turn_on:
+          service: sonos.set_option
+          data:
+            entity_id: media_player.living_room
+            night_sound: true
+        turn_off:
+          service: sonos.set_option
+          data:
+            entity_id: media_player.living_room
+            night_sound: false
+
+automation:
+  - alias: Media · Sonos · Put Beam in night mode
+    id: 5f5ca7b5-f0fa-4623-99e4-40a407f98583
+    trigger:
+      platform: time
+      at: "21:00:00"
+    action:
+      - service: switch.turn_on
+        entity_id: switch.sonos_beam_night_sound
+
+  - alias: Media · Sonos · Put Beam in day mode
+    id: a5620c83-8fac-462d-8f27-d395e64f378f
+    trigger:
+      platform: time
+      at: "08:00:00"
+    action:
+      - service: switch.turn_off
+        entity_id: switch.sonos_beam_night_sound
+
+homeassistant:
+  customize:
+    media_player.master_bedroom:
+      friendly_name: Sonos Master Bedroom
+      icon: mdi:speaker

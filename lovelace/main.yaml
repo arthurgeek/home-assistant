@@ -1,0 +1,27 @@
+title: Main
+views:
+  - title: Home
+    path: home
+    icon: "mdi:home"
+    badges: !include main_dashboard/home/badges.yaml
+    cards: !include main_dashboard/home/cards.yaml
+  - title: Living Room
+    path: living-room
+    type: custom:horizontal-layout
+    icon: "mdi:sofa"
+    cards: !include main_dashboard/living_room/cards.yaml
+  - title: Kitchen
+    path: kitchen
+    type: custom:horizontal-layout
+    icon: "mdi:chef-hat"
+    cards: !include main_dashboard/kitchen/cards.yaml
+  - title: Master Bedroom
+    path: master-bedroom
+    type: custom:horizontal-layout
+    icon: "mdi:bed-empty"
+    cards: !include main_dashboard/master_bedroom/cards.yaml
+  - title: Kids Bedroom
+    path: kids-bedroom
+    type: custom:horizontal-layout
+    icon: "mdi:bunk-bed"
+    cards: !include main_dashboard/kids_bedroom/cards.yaml

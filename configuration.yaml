@@ -1,0 +1,68 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+homeassistant:
+  packages: !include_dir_named packages
+
+# The http component serves all files and data required for the
+# Home Assistant frontend.
+#
+# https://www.home-assistant.io/integrations/http/
+#
+http:
+  # Enables additional IP filtering.
+  ip_ban_enabled: true
+
+  # Number of failed login attempts from a single IP after which it will
+  # be automatically banned.
+  login_attempts_threshold: 5
+
+  # reverse proxy
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.30.33.0/24
+
+# The official Home Assistant frontend
+#
+# https://www.home-assistant.io/integrations/frontend/
+#
+frontend:
+  # We can define additional/custom themes for the frontend here.
+  themes: !include_dir_merge_named themes
+
+# Lovelace is the Home Assistant dashboard.
+# https://www.home-assistant.io/lovelace/
+#
+lovelace:
+  mode: yaml
+  resources: !include lovelace/resources.yaml
+  dashboards:
+    lovelace-main:
+      mode: yaml
+      title: Main
+      icon: mdi:home
+      show_in_sidebar: true
+      filename: lovelace/main.yaml
+
+# The recorder component is storing details in a database which
+# then are handled by the history component.
+#
+# https://www.home-assistant.io/integrations/recorder/
+#
+recorder:
+  purge_keep_days: 31
+
+# The panel_custom integration allows you to write your own panels in
+# JavaScript and add them to Home Assistant
+# https://www.home-assistant.io/integrations/panel_custom/
+#
+panel_custom:
+  - name: panel-redirect
+    # url_path needs to be unique for each panel_custom config
+    url_path: redirect-server-controls
+    sidebar_title: Server Controls
+    sidebar_icon: mdi:server
+    module_url: /local/panel-redirect.js
+    config:
+      # Where you want to redirect to
+      target: /config/server_control

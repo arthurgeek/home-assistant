@@ -1,0 +1,74 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Lights"
+
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          show_name: false
+          entity: light.kids_bedroom
+
+    - type: markdown
+      content: "## Presence"
+
+    - type: grid
+      columns: 4
+      cards:
+        - type: horizontal-stack
+          cards:
+            - type: button
+              show_name: false
+              entity: binary_sensor.kids_bedroom_motion
+
+# Column 2
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Climate"
+
+    - type: horizontal-stack
+      cards:
+        - type: "custom:mini-graph-card"
+          name: "Temperature"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.kids_bedroom_temperature
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.kids_bedroom_temperature
+              aggregate_func: min
+              name: Min
+            - entity: sensor.kids_bedroom_temperature
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+        - type: "custom:mini-graph-card"
+          name: "Humidity"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.kids_bedroom_humidity
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.kids_bedroom_humidity
+              aggregate_func: min
+              name: Min
+            - entity: sensor.kids_bedroom_humidity
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+# Column 3
+- type: vertical-stack
+  cards: []

@@ -1,0 +1,6 @@
+light:
+  - platform: group
+    name: "Master Bedroom Lights"
+    entities:
+      - light.master_bedroom
+      - light.computer_lamp

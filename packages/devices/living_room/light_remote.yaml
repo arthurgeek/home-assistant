@@ -1,0 +1,9 @@
+automation:
+  - alias: Living Room · Light Remote
+    id: 09ac2501-5b5e-42da-a5e7-73bb5dc85046
+    use_blueprint:
+      path: starbuck93/zigbee2mqtt-ikea-five-button-remote.yaml
+      input:
+        remote: sensor.living_room_remote_action
+        light:
+          area_id: living_room

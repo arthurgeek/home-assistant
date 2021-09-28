@@ -1,0 +1,137 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Lights"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          show_name: false
+          entity: light.computer_lamp
+        - type: button
+          show_name: false
+          entity: light.master_bedroom
+
+    - type: markdown
+      content: "## Devices"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          show_name: false
+          entity: fan.master_bedroom_airpurifier
+
+    - type: markdown
+      content: "## Presence"
+    - type: grid
+      columns: 4
+      cards:
+        - type: button
+          template: default
+          entity: binary_sensor.master_bedroom_motion
+          name: "Corner"
+        - type: button
+          template: default
+          entity: binary_sensor.computer_motion
+          name: "Computer"
+
+# Column 2
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Climate"
+    - type: horizontal-stack
+      cards:
+        - type: "custom:mini-graph-card"
+          name: "Temperature"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.master_bedroom_temperature
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.master_bedroom_temperature
+              aggregate_func: min
+              name: Min
+            - entity: sensor.master_bedroom_temperature
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+        - type: "custom:mini-graph-card"
+          name: "Humidity"
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.master_bedroom_humidity
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.master_bedroom_humidity
+              aggregate_func: min
+              name: Min
+            - entity: sensor.master_bedroom_humidity
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+    - type: markdown
+      content: "## Sensors"
+    - type: horizontal-stack
+      cards:
+        - type: "custom:mini-graph-card"
+          name: Light Level
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.master_bedroom_light_level
+              name: "Corner"
+            - entity: sensor.computer_light_level
+              name: "Computer"
+
+        - type: "custom:mini-graph-card"
+          name: Air Quality
+          group_by: hour
+          hours_to_show: 24
+          animate: true
+          align_state: center
+          entities:
+            - entity: sensor.mb_purifier_air_quality
+              aggregate_func: max
+              name: Max
+              color: red
+            - entity: sensor.mb_purifier_air_quality
+              aggregate_func: min
+              name: Min
+            - entity: sensor.mb_purifier_air_quality
+              aggregate_func: avg
+              name: Avg
+              color: green
+
+# Column 3
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Media"
+    - type: "custom:mini-media-player"
+      entity: media_player.master_bedroom
+      artwork: material
+      hide:
+        power: true
+        source: true
+      speaker_group:
+        platform: sonos
+        show_group_count: true
+        entities:
+          - entity_id: media_player.master_bedroom
+            name: Sonos One
+          - entity_id: media_player.move
+            name: Sonos Move
