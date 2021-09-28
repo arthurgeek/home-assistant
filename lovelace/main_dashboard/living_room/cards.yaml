@@ -17,12 +17,52 @@
 
     - type: markdown
       content: "## Devices"
-    - type: grid
-      columns: 4
-      cards:
-        - type: button
-          entity: fan.living_room_airpurifier
-          show_name: false
+    - type: custom:purifier-card
+      entity: fan.living_room_airpurifier
+      stats:
+        - attribute: function
+        - attribute: humidity
+          unit: "%"
+          subtitle: Humidity
+      actions:
+        - name: Child Lock
+          icon: mdi:lock-open
+          service: philips_airpurifier_coap.set_child_lock_off
+          service_data:
+            entity_id: fan.living_room_airpurifier
+        - name: Speed 1
+          icon: "mdi:fan-speed-1"
+          preset_mode: 1
+        - name: Speed 2
+          icon: "mdi:fan-speed-2"
+          preset_mode: 2
+        - name: Speed 3
+          icon: "mdi:fan-speed-3"
+          preset_mode: 3
+        - name: Speed Turbo
+          icon: "mdi:car-turbocharger"
+          preset_mode: turbo
+        - name: Auto
+          icon: "mdi:brightness-auto"
+          preset_mode: auto
+        - name: Air Purifier
+          icon: "mdi:air-purifier"
+          service: philips_airpurifier_coap.set_function
+          service_data:
+            entity_id: fan.living_room_airpurifier
+            function: purification
+        - name: Humidifier
+          icon: "mdi:air-humidifier"
+          service: philips_airpurifier_coap.set_function
+          service_data:
+            entity_id: fan.living_room_airpurifier
+            function: purification_humidification
+      show_name: false
+      show_state: false
+      compact_view: true
+      aqi:
+        attribute: pm25
+        unit: "PM2.5"
 
     - type: markdown
       content: "## Presence"
