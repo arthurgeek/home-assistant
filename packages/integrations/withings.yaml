@@ -1,0 +1,9 @@
+# The withings sensor platform consumes data from various health products
+# produced by Withings.
+#
+# https://www.home-assistant.io/integrations/withings/
+#
+withings:
+  client_id: !secret withings_client_id
+  client_secret: !secret withings_client_secret
+  use_webhook: true
