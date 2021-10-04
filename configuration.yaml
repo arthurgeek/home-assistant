@@ -36,13 +36,6 @@ frontend:
 lovelace:
   mode: yaml
   resources: !include lovelace/resources.yaml
-  dashboards:
-    lovelace-main:
-      mode: yaml
-      title: Main
-      icon: mdi:home
-      show_in_sidebar: true
-      filename: lovelace/main.yaml
 
 # The recorder component is storing details in a database which
 # then are handled by the history component.
