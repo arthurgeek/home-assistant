@@ -1,0 +1,25 @@
+media_player:
+  - platform: group
+    entities:
+      - media_player.move
+      - media_player.living_room
+      - media_player.master_bedroom
+
+automation:
+  - alias: Routine · On the phone · Mute media player during a call · Suellen
+    id: 122109ca-61ce-4bc9-bef3-84404f491126
+    use_blueprint:
+      path: JackPoint/mute_media_player_on_call.yaml
+      input:
+        phone_state: sensor.android_suellen_phone_state
+        person: person.suellen
+        media_player: media_player.media_group
+
+  - alias: Routine · On the phone · Mute media player during a call · Arthur
+    id: e99edc3b-2cb2-45da-b622-bed91487c6e4
+    use_blueprint:
+      path: JackPoint/mute_media_player_on_call.yaml
+      input:
+        phone_state: sensor.android_arthur_phone_state
+        person: person.arthur
+        media_player: media_player.media_group
