@@ -15,14 +15,17 @@ automation:
 
   - alias: Routine · Meds Reminder · Mark meds as taken from button
     id: d7185891-c1ff-4b69-990d-dbf803f6dad8
-    use_blueprint:
-      path: Drafted/aqara-buttons-all-in-one-zigbee2mqtt.yaml
-      input:
-        action_sensor: sensor.medicine_button_click
-        single_action:
-          - service: input_boolean.turn_on
-            target:
-              entity_id: input_boolean.meds_taken
+    trigger:
+      - platform: device
+        domain: mqtt
+        device_id: 9263077109169a95d7b7746fd6e61ab8
+        type: action
+        subtype: single
+        discovery_id: 0x00158d0006727203 action_single
+    action:
+      - service: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.meds_taken
 
   - alias: Routine · Meds Reminder · Notify when meds have not been taken 1st
     id: 03f2d047-9829-44d3-aad3-4d6ae9075c08
