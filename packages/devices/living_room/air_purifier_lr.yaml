@@ -160,6 +160,9 @@ automation:
                   - condition: state
                     entity_id: binary_sensor.kitchen_windows
                     state: "on"
+                  - condition: state
+                    entity_id: binary_sensor.kids_bedroom_windows
+                    state: "on"
             sequence:
               - service: fan.turn_off
                 data:
@@ -190,6 +193,9 @@ automation:
               state: "off"
             - condition: state
               entity_id: binary_sensor.living_room_windows
+              state: "off"
+            - condition: state
+              entity_id: binary_sensor.kids_bedroom_windows
               state: "off"
     action:
       - service: fan.turn_on
@@ -222,6 +228,9 @@ automation:
             - condition: state
               entity_id: binary_sensor.living_room_windows
               state: "off"
+            - condition: state
+              entity_id: binary_sensor.kids_bedroom_windows
+              state: "off"
     action:
       - service: fan.turn_on
         entity_id: fan.living_room_airpurifier
@@ -244,6 +253,10 @@ automation:
         to: "on"
       - platform: state
         entity_id: binary_sensor.kitchen_windows
+        from: "off"
+        to: "on"
+      - platform: state
+        entity_id: binary_sensor.kids_bedroom_windows
         from: "off"
         to: "on"
     action:
