@@ -8,7 +8,12 @@
       cards:
         - type: button
           show_name: false
+          icon: "mdi:fridge"
           entity: light.kitchen
+        - type: button
+          show_name: false
+          icon: "mdi:stove"
+          entity: light.stove_lights
 
     - type: markdown
       content: "## Presence"
