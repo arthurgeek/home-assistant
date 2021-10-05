@@ -5,21 +5,71 @@ media_player:
       - media_player.living_room
       - media_player.master_bedroom
 
-automation:
-  - alias: Routine · On the phone · Mute media player during a call · Suellen
-    id: 122109ca-61ce-4bc9-bef3-84404f491126
-    use_blueprint:
-      path: JackPoint/mute_media_player_on_call.yaml
-      input:
-        phone_state: sensor.android_suellen_phone_state
-        person: person.suellen
-        media_player: media_player.media_group
+input_boolean:
+  suellen_in_whatsapp_call:
+    name: Is Suellen in a WhatsApp call?
+    icon: mdi:whatsapp
+  arthur_in_whatsapp_call:
+    name: Is Arthur in a WhatsApp call?
+    icon: mdi:whatsapp
 
-  - alias: Routine · On the phone · Mute media player during a call · Arthur
-    id: e99edc3b-2cb2-45da-b622-bed91487c6e4
-    use_blueprint:
-      path: JackPoint/mute_media_player_on_call.yaml
-      input:
-        phone_state: sensor.android_arthur_phone_state
-        person: person.arthur
-        media_player: media_player.media_group
+automation:
+  - alias: Routine · On the phone · Mute media player during a call
+    id: 122109ca-61ce-4bc9-bef3-84404f491126
+    mode: parallel
+    trigger:
+      - platform: state
+        entity_id:
+          - sensor.android_suellen_phone_state
+          - sensor.android_arthur_phone_state
+        to: ringing
+      - platform: state
+        entity_id:
+          - sensor.android_suellen_phone_state
+          - sensor.android_arthur_phone_state
+        to: offhook
+      - platform: state
+        entity_id:
+          - input_boolean.arthur_in_whatsapp_call
+          - input_boolean.suellen_in_whatsapp_call
+        to: "on"
+    condition:
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: >-
+              {% set entity = "person.arthur"
+                  if "arthur" in trigger.entity_id
+                  else "person.suellen" %}
+
+              {{ is_state(entity, "home") }}
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: media_player.living_room
+                state: playing
+              - condition: state
+                entity_id: media_player.master_bedroom
+                state: playing
+              - condition: state
+                entity_id: media_player.move
+                state: playing
+    action:
+      - service: media_player.volume_mute
+        entity_id: media_player.media_group
+        data:
+          is_volume_muted: true
+      - wait_for_trigger:
+          - platform: template
+            value_template: >-
+              {% set state = "idle"
+                  if "android" in trigger.entity_id
+                  else "off" %}
+
+              {{ is_state(trigger.entity_id, state) }}
+        timeout:
+          minutes: 60
+      - service: media_player.volume_mute
+        entity_id: media_player.media_group
+        data:
+          is_volume_muted: false
