@@ -26,123 +26,118 @@ automation:
       - service: input_boolean.turn_on
         target:
           entity_id: input_boolean.meds_taken
+      - service: notify.mobile_app_android_arthur
+        data:
+          message: clear_notification
+          data:
+            tag: medication-reminder
 
-  - alias: Routine · Meds Reminder · Notify when meds have not been taken 1st
+  #
+  # based on the following blueprint
+  # https://community.home-assistant.io/t/advanced-medication-reminder/300137
+  #
+  - alias: Routine · Meds Reminder · Notify when meds have not been taken
     id: 03f2d047-9829-44d3-aad3-4d6ae9075c08
     trigger:
       - platform: time
         at: "09:18:00"
     condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.meds_taken
-          state: "off"
-        - condition: state
-          entity_id: person.arthur
-          state: "home"
+      - condition: state
+        entity_id: input_boolean.meds_taken
+        state: "off"
     action:
-      - service: notify.mobile_app_android_arthur
-        data:
-          message: "Take your meds!"
-      - service: notify.alexa_media_alexa_kitchen
-        data:
-          message: "Arthur, you forgot to take your meds today!"
-          data:
-            type: tts
-
-  - alias: Routine · Meds Reminder · Notify when meds have not been taken 2nd
-    id: 5210f579-da74-460e-88a8-78bf545a38fb
-    trigger:
-      - platform: time
-        at: "10:18:00"
-    condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.meds_taken
-          state: "off"
-        - condition: state
-          entity_id: person.arthur
-          state: "home"
-    action:
-      - service: notify.mobile_app_android_arthur
-        data:
-          message: "Take your meds!"
-      - service: notify.alexa_media_alexa_kitchen
-        data:
-          message: "Arthur forgot to take his meds today!"
-          data:
-            type: tts
-
-  - alias: Routine · Meds Reminder · Notify when meds have not been taken 3rd
-    id: d2dfd124-c820-4778-acbf-41b8d54d6cc5
-    trigger:
-      - platform: time
-        at: "12:18:00"
-    condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.meds_taken
-          state: "off"
-        - condition: state
-          entity_id: person.arthur
-          state: "home"
-    action:
-      - service: notify.mobile_app_android_arthur
-        data:
-          message: "Take your meds!"
-      - service: notify.alexa_media_alexa_kitchen
-        data:
-          message: "Arthur, take your meds!"
-          data:
-            type: tts
-
-  - alias: Routine · Meds Reminder · Notify when meds have not been taken 4th
-    id: a6493df0-8ede-4563-a170-67b9b33c6499
-    trigger:
-      - platform: time
-        at: "18:18:00"
-    condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.meds_taken
-          state: "off"
-        - condition: state
-          entity_id: person.arthur
-          state: "home"
-    action:
-      - service: notify.mobile_app_android_arthur
-        data:
-          message: "Are you alive? Take your meds!"
-      - service: notify.alexa_media_alexa_kitchen
-        data:
-          message: "Arthur, are you ok? You haven' taken your meds today!"
-          data:
-            type: tts
-
-  - alias: Routine · Meds Reminder · Notify when meds have not been taken 5th
-    id: f447bd1f-623b-4f31-819e-448ae3f29b0b
-    trigger:
-      - platform: time
-        at: "21:18:00"
-    condition:
-      condition: and
-      conditions:
-        - condition: state
-          entity_id: input_boolean.meds_taken
-          state: "off"
-        - condition: state
-          entity_id: person.arthur
-          state: "home"
-    action:
-      - service: notify.mobile_app_android_arthur
-        data:
-          message: "Are you alive? Take your meds!"
-      - service: notify.alexa_media_alexa_kitchen
-        data:
-          message: "Arthur, are you listening to me? Take. Your. Meds! Now!"
-          data:
-            type: tts
+      - alias: Notify until the medication has been taken
+        repeat:
+          while:
+            - condition: state
+              entity_id: input_boolean.meds_taken
+              state: "off"
+            - condition: state
+              entity_id: person.arthur
+              state: "home"
+          sequence:
+            - service: logbook.log
+              data:
+                name: "Meds Reminder"
+                message: "Reminder sent"
+                entity_id: input_boolean.meds_taken
+            - service: notify.alexa_media_alexa_kitchen
+              data:
+                message: >-
+                  {% if repeat.index == 1 %}
+                    {{ "Arthur, you forgot to take your meds today!" }}
+                  {% elif repeat.index == 2 %}
+                    {{ "Arthur forgot to take his meds today!" }}
+                  {% elif repeat.index == 3 %}
+                    {{ "Arthur, take your meds!" }}
+                  {% elif repeat.index == 4 %}
+                    {{ "Arthur, are you ok? You haven't taken your meds today!" }}
+                  {% else %}
+                    {{ "Arthur, are you listening to me? Take. Your. Meds! Now!" }}
+                  {% endif %}
+                data:
+                  type: tts
+            - service: notify.mobile_app_android_arthur
+              data:
+                title: "Meds Reminder"
+                message: >-
+                  {% if repeat.index <= 2 %}
+                    {{ "Take your meds!" }}
+                  {% else %}
+                    {{ "Are you alive? Take your meds!" }}
+                  {% endif %}
+                data:
+                  actions:
+                    - title: "Taken"
+                      action: taken
+                    - title: "Ask later"
+                      action: later
+                    - title: "Skip"
+                      action: skip
+                  tag: medication-reminder
+            - wait_for_trigger:
+                platform: event
+                event_type: mobile_app_notification_action
+              timeout:
+                minutes: 120
+            - choose:
+                - conditions: "{{ wait.trigger.event.data.action == 'taken' }}"
+                  sequence:
+                    - service: input_boolean.turn_on
+                      target:
+                        entity_id: input_boolean.meds_taken
+                    - service: logbook.log
+                      data:
+                        name: "Meds Reminder"
+                        message: "Medication taken"
+                        entity_id: input_boolean.meds_taken
+                - conditions: "{{ wait.trigger.event.data.action == 'later' }}"
+                  sequence:
+                    - service: logbook.log
+                      data:
+                        name: "Meds Reminder"
+                        message: "Reminder postponed"
+                        entity_id: input_boolean.meds_taken
+                    - delay:
+                        minutes: 60
+                - conditions: "{{ wait.trigger.event.data.action == 'skip' }}"
+                  sequence:
+                    - service: input_boolean.turn_on
+                      target:
+                        entity_id: input_boolean.meds_taken
+                    - service: logbook.log
+                      data:
+                        name: "Meds Reminder"
+                        message: "Reminder skipped"
+                        entity_id: input_boolean.meds_taken
+              default:
+                - service: notify.mobile_app_android_arthur
+                  data:
+                    message: clear_notification
+                    data:
+                      tag: medication-reminder
+                - service: logbook.log
+                  data:
+                    name: "Meds Reminder"
+                    message: "Notification timed out"
+                    entity_id: input_boolean.meds_taken
