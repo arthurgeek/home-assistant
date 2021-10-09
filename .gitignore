@@ -26,7 +26,9 @@ secrets.yaml
 google_calendars.yaml
 www/floorplan
 *.json
+*.js
 *.token
+*.backup
 
 # Specific keeps
 !.gitkeep

@@ -1,0 +1,48 @@
+[
+  {
+    "id": "1a029cf20f8e1f18",
+    "type": "tab",
+    "label": "Lovelace Watchdog",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "29a4bb95c0153da9",
+    "type": "server",
+    "name": "Home Assistant",
+    "version": 1,
+    "legacy": false,
+    "addon": true,
+    "rejectUnauthorizedCerts": true,
+    "ha_boolean": "y|yes|true|on|home|open",
+    "connectionDelay": true,
+    "cacheJson": true
+  },
+  {
+    "id": "cbfb788b.297f98",
+    "type": "watch",
+    "z": "1a029cf20f8e1f18",
+    "name": "",
+    "files": "/config/lovelace",
+    "recursive": false,
+    "x": 340,
+    "y": 180,
+    "wires": [["5cde255861bf9184"]]
+  },
+  {
+    "id": "5cde255861bf9184",
+    "type": "exec",
+    "z": "1a029cf20f8e1f18",
+    "command": "touch /config/ui-lovelace.yaml",
+    "addpay": "",
+    "append": "",
+    "useSpawn": "false",
+    "timer": "",
+    "winHide": false,
+    "oldrc": false,
+    "name": "",
+    "x": 670,
+    "y": 180,
+    "wires": [[], [], []]
+  }
+]
