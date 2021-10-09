@@ -1,0 +1,147 @@
+width:
+  mobile: 0
+  tablet: 30
+  desktop: 23
+
+breakpoints:
+  mobile: 768
+  tablet: 1280
+
+date: true
+dateFormat: dddd, DD MMMM YYYY
+digitalClock: true
+
+sidebarMenu:
+  - action: navigate
+    icon: "mdi:home"
+    name: Home
+    navigation_path: /lovelace/home
+  - action: navigate
+    icon: "mdi:sofa"
+    name: Living Room
+    navigation_path: /lovelace/living-room
+  - action: navigate
+    icon: "mdi:chef-hat"
+    name: Kitchen
+    navigation_path: /lovelace/kitchen
+  - action: navigate
+    icon: "mdi:bed-empty"
+    name: Master Bedroom
+    navigation_path: /lovelace/master-bedroom
+  - action: navigate
+    icon: "mdi:bunk-bed"
+    name: Kids Bedroom
+    navigation_path: /lovelace/kids-bedroom
+  - action: navigate
+    icon: "mdi:floor-plan"
+    name: Floorplan
+    navigation_path: /lovelace/floorplan
+
+bottomCard:
+  type: vertical-stack
+  cardOptions:
+    cards:
+      - type: picture-elements
+        image: /local/transparent.png
+        elements:
+          - type: "state-badge"
+            entity: person.arthur
+            style:
+              top: -5px
+              transform: scale(0.80,0.80)
+            card_mod: &badge-card-mod-style
+              style:
+                ha-state-label-badge$:
+                  ha-label-badge: |
+                    ha-icon {
+                      display: none;
+                    }
+
+                  ha-label-badge$: |
+                    .badge-container .title {
+                      display: none;
+                    }
+          - type: "state-badge"
+            entity: person.suellen
+            style:
+              top: -5px
+              left: 45px
+              transform: scale(0.80,0.80)
+            card_mod: *badge-card-mod-style
+        card_mod:
+          style: |
+            ha-card {
+              height: 52px !important;
+              background: none;
+              border-radius: none;
+              box-shadow: none;
+            }
+
+      - type: "custom:atomic-calendar-revive"
+        name: Calendar
+        entities:
+          - entity: calendar.family
+          - entity: calendar.holidays_in_germany
+        card_mod:
+          style: |
+            .cal-card {
+              padding: 0;
+              background: none;
+              border-radius: none;
+              box-shadow: none;
+            }
+
+            .cal-name {
+              line-height: inherit;
+              font-size: 20px;
+              padding: 4px 0;
+            }
+
+            .cal-eventContainer {
+              padding-top: 2px !important;
+            }
+
+            .cal-eventContainer td {
+              padding: 6px 0 !important;
+            }
+  cardStyle: |
+    :host {
+      width: 100%;
+    }
+
+template: |
+  {% set calendar = "calendar.birthdays" %}
+  {% if is_state(calendar, "on") %}
+    <li>
+      {{ "\U0001F389" }}
+      Today is {{ state_attr(calendar, "message") }}
+      {{ "\U0001F389" }}
+    </li>
+  {% endif %}
+
+style: |
+  .sidebar-inner {
+    padding: 15px 10px 10px !important;
+  }
+
+  .sidebarMenu {
+    margin: 10px 0 !important;
+    padding: 5px 0 !important;
+  }
+
+  .digitalClock {
+    text-align: center;
+    line-height: unset !important;
+    color: var(--primary-text-color);
+  }
+
+  .date {
+    font-size: 18px;
+    color: var(--secondary-text-color);
+    text-align: center;
+  }
+
+  .template {
+    margin: 15px 5px !important;
+    text-align: center;
+  }

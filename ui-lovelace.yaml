@@ -1,28 +1,43 @@
+sidebar: !include lovelace/sidebar.yaml
+kiosk_mode:
+  hide_header: true
+  mobile_settings:
+    hide_header: false
+  user_settings:
+    - users:
+        - "Kiosk"
+      kiosk: true
+
 title: Main
 
 views:
   - title: Home
     path: home
+    type: custom:horizontal-layout
     icon: "mdi:home"
-    badges: !include lovelace/home/badges.yaml
-    cards: !include lovelace/home/cards.yaml
+    cards: !include lovelace/home.yaml
   - title: Living Room
     path: living-room
     type: custom:horizontal-layout
     icon: "mdi:sofa"
-    cards: !include lovelace/living_room/cards.yaml
+    cards: !include lovelace/living_room.yaml
   - title: Kitchen
     path: kitchen
     type: custom:horizontal-layout
     icon: "mdi:chef-hat"
-    cards: !include lovelace/kitchen/cards.yaml
+    cards: !include lovelace/kitchen.yaml
   - title: Master Bedroom
     path: master-bedroom
     type: custom:horizontal-layout
     icon: "mdi:bed-empty"
-    cards: !include lovelace/master_bedroom/cards.yaml
+    cards: !include lovelace/master_bedroom.yaml
   - title: Kids Bedroom
     path: kids-bedroom
     type: custom:horizontal-layout
     icon: "mdi:bunk-bed"
-    cards: !include lovelace/kids_bedroom/cards.yaml
+    cards: !include lovelace/kids_bedroom.yaml
+  - title: Floorplan
+    path: floorplan
+    panel: true
+    icon: "mdi:floor-plan"
+    cards: !include lovelace/floorplan.yaml

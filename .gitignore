@@ -23,7 +23,10 @@ zigbee2mqtt
 ip_bans.yaml
 known_devices.yaml
 secrets.yaml
+google_calendars.yaml
+www/floorplan
 *.json
+*.token
 
 # Specific keeps
 !.gitkeep

@@ -21,5 +21,11 @@
   type: module
 - url: /hacsfiles/purifier-card/purifier-card.js
   type: module
-- url: /hacsfiles/lovelace-card-mod/card-mod.js
+- url: /hacsfiles/lovelace-card-mod/card-mod.js?v=2
+  type: module
+- url: /hacsfiles/sidebar-card/sidebar-card.js
+  type: module
+- url: /hacsfiles/kiosk-mode/kiosk-mode.js
+  type: module
+- url: /hacsfiles/atomic-calendar-revive/atomic-calendar-revive.js
   type: module

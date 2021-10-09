@@ -1,0 +1,75 @@
+# Column 1
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Whole House Climate"
+    - type: "custom:mini-graph-card"
+      name: Temperature
+      group_by: hour
+      hours_to_show: 24
+      animate: true
+      entities:
+        - entity: sensor.master_bedroom_temperature
+          name: Master Bedroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.living_room_temperature
+          name: Living Room
+          show_state: true
+          color: green
+          show_indicator: true
+        - entity: sensor.bathroom_temperature
+          name: Bathroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.kids_bedroom_temperature
+          name: Kids Bedroom
+          show_state: true
+          show_indicator: true
+    - type: "custom:mini-graph-card"
+      name: Air Quality
+      group_by: hour
+      hours_to_show: 24
+      animate: true
+      entities:
+        - entity: sensor.mb_purifier_air_quality
+          name: Master Bedroom
+          show_state: true
+          show_indicator: true
+        - entity: sensor.lr_purifier_air_quality
+          name: Living Room
+          show_state: true
+          color: green
+          show_indicator: true
+
+# Column 2
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Weather"
+    - type: custom:weather-card
+      entity: weather.home
+      name: Berlin
+
+# Column 3
+- type: vertical-stack
+  cards:
+    - type: markdown
+      content: "## Whole House Media"
+    - type: "custom:mini-media-player"
+      entity: media_player.living_room
+      artwork: material
+      hide:
+        power: true
+        source: true
+      speaker_group:
+        platform: sonos
+        show_group_count: true
+        expanded: true
+        entities:
+          - entity_id: media_player.living_room
+            name: "Sonos Beam"
+          - entity_id: media_player.master_bedroom
+            name: Sonos One
+          - entity_id: media_player.move
+            name: Sonos Move

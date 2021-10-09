@@ -1,0 +1,67 @@
+- type: picture-elements
+  image: /local/floorplan/default.png?v=6
+  style: |
+    ha-card {
+      background: none;
+      margin: 0 auto;
+    }
+
+    hui-image-element {
+      position: absolute;
+      mix-blend-mode: lighten;
+      pointer-events: none;
+      transform: translate(0,0) !important;
+      top: 0;
+      left: 0;
+    }
+
+  elements:
+    - type: conditional
+      conditions:
+        - entity: light.computer_lamp
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/computer_lamp.png?v=3
+    - type: conditional
+      conditions:
+        - entity: light.master_bedroom
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/master_bedroom.png
+    - type: conditional
+      conditions:
+        - entity: light.tv
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/tv.png
+    - type: conditional
+      conditions:
+        - entity: light.living_room
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/living_room.png
+    - type: conditional
+      conditions:
+        - entity: light.stove_lights
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/stove.png
+    - type: conditional
+      conditions:
+        - entity: light.kitchen
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/kitchen.png
+    - type: conditional
+      conditions:
+        - entity: light.kids_bedroom
+          state: "on"
+      elements:
+        - type: image
+          image: /local/floorplan/kids_bedroom.png
