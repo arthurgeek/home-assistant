@@ -1,0 +1,17 @@
+automation:
+  - id: garage_light_auto_off
+    alias: Garage Lights Auto-Off
+    description: Automatically turn off a garage light left on for 30 minutes
+    mode: parallel
+    triggers:
+      - trigger: light.turned_on
+        target:
+          area_id: garage
+        options:
+          behavior: each
+          for:
+            minutes: 30
+    actions:
+      - action: light.turn_off
+        target:
+          entity_id: "{{ trigger.entity_id }}"
