@@ -1,0 +1,209 @@
+notify:
+  - name: parents
+    platform: group
+    services:
+      - service: mobile_app_arthurs_phone
+      - service: mobile_app_suellens_phone
+
+script:
+  announce:
+    alias: Announce / Speak TTS
+    description: Centralized TTS speech announcement across media players
+    mode: parallel
+    fields:
+      media_player:
+        description: Target media player entity (e.g. media_player.living_room, media_player.doorbell_speaker)
+        example: "media_player.living_room"
+        required: true
+      message:
+        description: Text to speak
+        example: "The laundry cycle is complete."
+        required: true
+      language:
+        description: Language code (defaults to pt-BR)
+        default: "pt-BR"
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ states(media_player) not in ['unavailable', 'unknown'] }}"
+        then:
+          - action: tts.speak
+            continue_on_error: true
+            target:
+              # Centralized TTS engine: change this single line to switch TTS providers globally
+              entity_id: tts.edge_tts_service_edge_tts
+            data:
+              media_player_entity_id: "{{ media_player }}"
+              message: "{{ message }}"
+              language: "{{ language | default('pt-BR', true) }}"
+              options:
+                voice: pt-BR-FranciscaNeural
+
+  notify_person:
+    alias: Notify Person
+    description: Send notification to a specific person's phone (Arthur or Suellen)
+    mode: parallel
+    fields:
+      person:
+        description: Person entity or name to notify (e.g. person.arthur, arthur, person.suellen, suellen)
+        example: "person.arthur"
+        required: true
+      title:
+        description: Title of the notification
+        example: "Task Complete"
+        required: true
+      message:
+        description: Body of the notification
+        example: "Your laundry is done."
+        required: true
+      entity_id:
+        description: Camera entity ID for dynamic snapshot/live stream
+        example: "camera.doorbell"
+        default: ""
+      image:
+        description: Camera proxy URL or image path
+        example: "/api/camera_proxy/camera.doorbell"
+        default: ""
+      click_action:
+        description: Deep link or URL to open on tap
+        example: "app://com.ubnt.unifi.protect"
+        default: ""
+      channel:
+        description: Notification channel (e.g. Doorbell, Laundry, Silent, General)
+        default: "General"
+      importance:
+        description: Notification importance level (high, low, max)
+        default: "high"
+      notification_icon:
+        description: Material Design icon (e.g. mdi:bell)
+        default: ""
+      actions:
+        description: Action buttons list
+        default: []
+    sequence:
+      - variables:
+          target_person: "{{ person if person.startswith('person.') else 'person.' ~ person }}"
+          trackers: "{{ state_attr(target_person, 'device_trackers') or [] }}"
+          phone_tracker: "{{ trackers | select('search', '_phone') | first | default(trackers | first, true) }}"
+          service_target: >-
+            {% if phone_tracker %}
+              notify.mobile_app_{{ device_attr(phone_tracker, 'name') | slugify }}
+            {% elif target_person == 'person.arthur' %}
+              notify.mobile_app_arthurs_phone
+            {% elif target_person == 'person.suellen' %}
+              notify.mobile_app_suellens_phone
+            {% else %}
+              none
+            {% endif %}
+          payload: >-
+            {% set p = {
+              'channel': channel | default('General', true),
+              'importance': importance | default('high', true),
+              'ttl': 0,
+              'priority': 'high'
+            } %}
+            {% if entity_id is defined and entity_id %}
+              {% set p = dict(p, entity_id=entity_id) %}
+              {% if entity_id.startswith('camera.') %}
+                {% set pic = state_attr(entity_id, 'entity_picture') %}
+                {% if pic %}
+                  {% set p = dict(p, image=pic) %}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+            {% if image is defined and image %}
+              {% if image.startswith('/api/camera_proxy/') and 'token=' not in image %}
+                {% set cam = image.replace('/api/camera_proxy/', '').split('?')[0] %}
+                {% set pic = state_attr(cam, 'entity_picture') %}
+                {% set final_image = pic if pic else image %}
+              {% else %}
+                {% set final_image = image %}
+              {% endif %}
+              {% set p = dict(p, image=final_image) %}
+            {% endif %}
+            {% if click_action is defined and click_action %}
+              {% set p = dict(p, clickAction=click_action, url=click_action) %}
+            {% endif %}
+            {% if notification_icon is defined and notification_icon %}
+              {% set p = dict(p, notification_icon=notification_icon) %}
+            {% endif %}
+            {% if actions is defined and actions and actions != [] %}
+              {% set p = dict(p, actions=actions) %}
+            {% endif %}
+            {{ p }}
+      - if:
+          - condition: template
+            value_template: "{{ service_target != 'none' }}"
+        then:
+          - action: "{{ service_target }}"
+            continue_on_error: true
+            data:
+              title: "{{ title }}"
+              message: "{{ message }}"
+              data: "{{ payload }}"
+
+  notify_parents:
+    alias: Notify Parents
+    description: Send notification to both Arthur and Suellen
+    mode: parallel
+    fields:
+      title:
+        description: Title of the notification
+        example: "Doorbell Ringing"
+        required: true
+      message:
+        description: Body of the notification
+        example: "Someone is at the front gate."
+        required: true
+      entity_id:
+        description: Camera entity ID for dynamic snapshot/live stream
+        example: "camera.doorbell"
+        default: ""
+      image:
+        description: Camera proxy URL or image path
+        example: "/api/camera_proxy/camera.doorbell"
+        default: ""
+      click_action:
+        description: Deep link or URL to open on tap
+        example: "app://com.ubnt.unifi.protect"
+        default: ""
+      channel:
+        description: Notification channel (e.g. Doorbell, Laundry, Silent)
+        default: "General"
+      importance:
+        description: Notification importance level (high, low, max)
+        default: "high"
+      notification_icon:
+        description: Material Design icon (e.g. mdi:bell)
+        default: ""
+      actions:
+        description: Action buttons list
+        default: []
+    sequence:
+      - parallel:
+          - action: script.notify_person
+            continue_on_error: true
+            data:
+              person: person.arthur
+              title: "{{ title }}"
+              message: "{{ message }}"
+              entity_id: "{{ entity_id | default('', true) }}"
+              image: "{{ image | default('', true) }}"
+              click_action: "{{ click_action | default('', true) }}"
+              channel: "{{ channel | default('General', true) }}"
+              importance: "{{ importance | default('high', true) }}"
+              notification_icon: "{{ notification_icon | default('', true) }}"
+              actions: "{{ actions | default([], true) }}"
+          - action: script.notify_person
+            continue_on_error: true
+            data:
+              person: person.suellen
+              title: "{{ title }}"
+              message: "{{ message }}"
+              entity_id: "{{ entity_id | default('', true) }}"
+              image: "{{ image | default('', true) }}"
+              click_action: "{{ click_action | default('', true) }}"
+              channel: "{{ channel | default('General', true) }}"
+              importance: "{{ importance | default('high', true) }}"
+              notification_icon: "{{ notification_icon | default('', true) }}"
+              actions: "{{ actions | default([], true) }}"
