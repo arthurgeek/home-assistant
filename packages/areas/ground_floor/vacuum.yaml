@@ -1,0 +1,54 @@
+automation:
+  - id: roborock_maintenance_alert
+    alias: Roborock Maintenance and Error Alert
+    description: Alerts Arthur and Suellen when Roborock needs water maintenance or encounters an error, muting audio after 23:00
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.roborock_water_shortage
+        to: 'on'
+        for:
+          minutes: 2
+          seconds: 30
+        id: water_shortage
+
+      - trigger: state
+        entity_id: binary_sensor.roborock_dirty_water_full
+        to: 'on'
+        for:
+          minutes: 1
+        id: dirty_tank_full
+
+      - trigger: vacuum.errored
+        target:
+          area_id: living_room
+        options:
+          behavior: each
+        id: vacuum_stuck
+
+    actions:
+      - variables:
+          is_quiet_hours: "{{ now().hour >= 23 or now().hour < 8 }}"
+          notification_title: >-
+            {% if trigger.id == 'water_shortage' %}
+              Roborock: Sem Água Limpa
+            {% elif trigger.id == 'dirty_tank_full' %}
+              Roborock: Água Suja Cheia
+            {% else %}
+              Alerta no Roborock
+            {% endif %}
+          notification_message: >-
+            {% if trigger.id == 'water_shortage' %}
+              O reservatório de água limpa está vazio. Por favor, reabasteça para continuar a limpeza.
+            {% elif trigger.id == 'dirty_tank_full' %}
+              O reservatório de água suja está cheio. Por favor, esvazie o compartimento.
+            {% else %}
+              O Roborock encontrou um erro: {{ states('sensor.roborock_error') }}
+            {% endif %}
+
+      - action: script.notify_parents
+        data:
+          title: "{{ notification_title }}"
+          message: "{{ notification_message }}"
+          importance: "{{ 'low' if is_quiet_hours else 'high' }}"
+          channel: "{{ 'Silent' if is_quiet_hours else 'Vacuum' }}"
+          notification_icon: mdi:robot-vacuum

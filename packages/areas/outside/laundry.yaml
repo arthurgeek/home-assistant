@@ -1,0 +1,83 @@
+automation:
+  - id: laundry_cycle_completion_alert
+    alias: Laundry Cycle Completion and Error Alert
+    description: Alerts Arthur and Suellen when the washer or dryer finishes or encounters an error, with daytime Sonos chime/TTS announcement
+    triggers:
+      - trigger: state
+        entity_id: sensor.washer_current_status
+        to: 'end'
+        not_from:
+          - 'unknown'
+          - 'unavailable'
+        id: washer_done
+
+      - trigger: state
+        entity_id: sensor.dryer_current_status
+        to: 'end'
+        not_from:
+          - 'unknown'
+          - 'unavailable'
+        id: dryer_done
+
+      - trigger: state
+        entity_id: sensor.washer_current_status
+        to: 'error'
+        not_from:
+          - 'unknown'
+          - 'unavailable'
+        id: washer_error
+
+      - trigger: state
+        entity_id: sensor.dryer_current_status
+        to: 'error'
+        not_from:
+          - 'unknown'
+          - 'unavailable'
+        id: dryer_error
+
+    actions:
+      - variables:
+          is_quiet_hours: "{{ now().hour >= 23 or now().hour < 8 }}"
+          notification_title: >-
+            {% if trigger.id == 'washer_done' %}
+              Lavadora Concluída
+            {% elif trigger.id == 'dryer_done' %}
+              Secadora Concluída
+            {% elif trigger.id == 'washer_error' %}
+              Erro na Lavadora
+            {% else %}
+              Erro na Secadora
+            {% endif %}
+          notification_message: >-
+            {% if trigger.id == 'washer_done' %}
+              A máquina de lavar terminou o ciclo. Não se esqueça de colocar as roupas na secadora!
+            {% elif trigger.id == 'dryer_done' %}
+              A secadora terminou o ciclo. As roupas limpas estão prontas para guardar!
+            {% elif trigger.id == 'washer_error' %}
+              A máquina de lavar reportou um erro. Por favor, verifique o aparelho.
+            {% else %}
+              A secadora reportou um erro. Por favor, verifique o aparelho.
+            {% endif %}
+          notification_icon: >-
+            {% if trigger.id in ['washer_done', 'washer_error'] %}
+              mdi:washing-machine
+            {% else %}
+              mdi:tumble-dryer
+            {% endif %}
+
+      - action: script.notify_parents
+        data:
+          title: "{{ notification_title }}"
+          message: "{{ notification_message }}"
+          importance: "{{ 'low' if is_quiet_hours else 'high' }}"
+          channel: "{{ 'Silent' if is_quiet_hours else 'Laundry' }}"
+          notification_icon: "{{ notification_icon }}"
+
+      - if:
+          - condition: template
+            value_template: "{{ not is_quiet_hours }}"
+        then:
+          - action: script.announce
+            data:
+              media_player: media_player.living_room_ma
+              message: "{{ notification_message }}"
