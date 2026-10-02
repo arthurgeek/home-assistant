@@ -8,3 +8,8 @@ frontend:
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
+
+homeassistant:
+  internal_url: !secret internal_url
+  external_url: !secret external_url
+  packages: !include_dir_named packages

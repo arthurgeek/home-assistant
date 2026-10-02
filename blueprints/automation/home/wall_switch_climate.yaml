@@ -1,0 +1,72 @@
+blueprint:
+  name: Wall switch and air conditioner
+  description: >-
+    Keeps a wall switch and an air conditioner in step. Switching the wall switch on cools and off switches the AC
+    off; when the AC changes by any other means, the wall switch follows.
+  domain: automation
+  input:
+    wall_switch:
+      name: Wall switch
+      selector:
+        entity:
+          filter:
+            - domain: switch
+    climate:
+      name: Air conditioner
+      selector:
+        entity:
+          filter:
+            - domain: climate
+
+variables:
+  wall_switch: !input wall_switch
+  climate: !input climate
+
+triggers:
+  - trigger: state
+    id: switch
+    entity_id: !input wall_switch
+    not_from:
+      - unknown
+      - unavailable
+    not_to:
+      - unknown
+      - unavailable
+  - trigger: state
+    id: climate
+    entity_id: !input climate
+    not_from:
+      - unknown
+      - unavailable
+    not_to:
+      - unknown
+      - unavailable
+
+actions:
+  - choose:
+      - alias: The wall switch was toggled
+        conditions:
+          - condition: trigger
+            id: switch
+          - condition: template
+            value_template: >-
+              {{ (trigger.to_state.state == 'on' and is_state(climate, 'off'))
+                 or (trigger.to_state.state == 'off' and not is_state(climate, 'off')) }}
+        sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: !input climate
+            data:
+              hvac_mode: "{{ 'cool' if trigger.to_state.state == 'on' else 'off' }}"
+      - alias: The air conditioner changed
+        conditions:
+          - condition: trigger
+            id: climate
+          - condition: template
+            value_template: >-
+              {{ (trigger.to_state.state != 'off' and is_state(wall_switch, 'off'))
+                 or (trigger.to_state.state == 'off' and is_state(wall_switch, 'on')) }}
+        sequence:
+          - action: "switch.turn_{{ 'on' if trigger.to_state.state != 'off' else 'off' }}"
+            target:
+              entity_id: !input wall_switch

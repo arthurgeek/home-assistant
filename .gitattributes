@@ -7,3 +7,4 @@ flake.lock export-ignore
 .gitignore export-ignore
 .lefthook.toml export-ignore
 README.md export-ignore
+secrets.yaml.example export-ignore

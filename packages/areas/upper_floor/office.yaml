@@ -1,0 +1,9 @@
+automation:
+  - id: office_ac_wall_switch
+    alias: Office AC Wall Switch
+    description: Keeps the Office AC and its wall switch in step
+    use_blueprint:
+      path: home/wall_switch_climate.yaml
+      input:
+        wall_switch: switch.office_ac_wall_switch
+        climate: climate.office_ac
