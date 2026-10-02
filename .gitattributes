@@ -1,0 +1,9 @@
+# Repo tooling: committed, but not part of the HA config.
+flake.nix export-ignore
+flake.lock export-ignore
+.envrc export-ignore
+.yamlfmt export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+.lefthook.toml export-ignore
+README.md export-ignore
