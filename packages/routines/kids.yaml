@@ -1,0 +1,20 @@
+automation:
+  - id: kids_weekday_shower_reminder
+    alias: Kids Weekday Shower Reminder
+    description: Announces on the living room Sonos every weekday at 11:00 for kids to take a shower and get ready for school
+    triggers:
+      - trigger: time
+        at: "11:00:00"
+    conditions:
+      - condition: time
+        weekday:
+          - mon
+          - tue
+          - wed
+          - thu
+          - fri
+    actions:
+      - action: script.announce
+        data:
+          media_player: media_player.living_room_ma
+          message: "Crianças, hora do banho para a escola! Vamos lá se arrumar para não atrasar."
