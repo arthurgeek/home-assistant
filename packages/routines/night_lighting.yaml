@@ -1,0 +1,72 @@
+automation:
+  - id: outside_lights_on
+    alias: Outside Lights On at Dark
+    description: Turn on outside lights when dark for 10 minutes
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.doorbell_is_dark
+        for:
+          minutes: 10
+        from:
+          - 'off'
+          - 'on'
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: light.street_lights
+
+  - id: outside_lights_off
+    alias: Outside Lights Off at Daylight
+    description: Turn off outside lights when daylight for 10 minutes
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.doorbell_is_dark
+        for:
+          minutes: 10
+        from:
+          - 'on'
+          - 'off'
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: light.street_lights
+
+  - id: samsung_ac_night_lighting
+    alias: Turn Off AC Display Light at Night
+    description: Turn off front LED display on upper floor Samsung ACs at night
+    triggers:
+      - trigger: climate.turned_on
+        target:
+          label_id: samsung
+        options:
+          behavior: each
+    conditions:
+      - condition: sun
+        after: sunset
+        before: sunrise
+    actions:
+      - action: script.ac_display_light_off
+        data:
+          device_id: '{{ device_id(trigger.entity_id) }}'
+
+script:
+  ac_display_light_off:
+    alias: Turn Off AC Display Light
+    mode: parallel
+    fields:
+      device_id:
+        description: Device ID
+        required: true
+    sequence:
+      - action: smartthing_extra.send_command
+        data:
+          device_id: '{{ device_id }}'
+          component: main
+          capability: execute
+          command: execute
+          arguments:
+            - mode/vs/0
+            - x.com.samsung.da.options:
+                - Light_On

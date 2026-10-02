@@ -8,8 +8,16 @@ YAML packages for the automations, sensors and scripts.
 |---|---|
 | `configuration.yaml` | Core config |
 | `packages/areas/` | One file per room or outdoor area |
+| `packages/routines/` | Time- and event-driven routines |
 
 `automations.yaml`, `scripts.yaml` and `scenes.yaml` are the files the UI writes to; the logic is in `packages/`.
+
+## Requirements
+
+Installed from [HACS](https://hacs.xyz) on the instance, not included here.
+
+Integrations:
+[SmartThings Extra](https://github.com/mik-laj/ha_smartthing_extra).
 
 ## Setup
 
