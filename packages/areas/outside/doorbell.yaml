@@ -1,0 +1,47 @@
+automation:
+  - id: doorbell_ring
+    alias: Doorbell Ring
+    description: Send notification with live camera snapshot and talk deep link, and pause music if playing
+    triggers:
+      - trigger: doorbell.rang
+        target:
+          area_id: street
+      - trigger: state
+        entity_id: binary_sensor.doorbell
+        to: 'on'
+    actions:
+      - action: script.notify_parents
+        data:
+          title: "Campainha Tocando"
+          message: "Tem alguém no portão da frente."
+          entity_id: camera.doorbell
+          click_action: "/catppuccin-home/0#doorbell"
+          channel: "Doorbell"
+          importance: "high"
+          notification_icon: "mdi:doorbell-video"
+          actions:
+            - action: "URI"
+              title: "Falar"
+              uri: "/catppuccin-home/0#doorbell"
+            - action: "DOORBELL_BE_RIGHT_THERE"
+              title: "Já estou indo"
+            - action: "DOORBELL_CANNOT_ANSWER"
+              title: "Não posso atender"
+
+      - if:
+          - condition: template
+            value_template: >-
+              {{ expand(area_entities('living_room'))
+                 | selectattr('domain', 'eq', 'media_player')
+                 | selectattr('state', 'eq', 'playing')
+                 | list | count > 0 }}
+        then:
+          - action: media_player.media_pause
+            continue_on_error: true
+            target:
+              entity_id: >-
+                {{ expand(area_entities('living_room'))
+                   | selectattr('domain', 'eq', 'media_player')
+                   | selectattr('state', 'eq', 'playing')
+                   | map(attribute='entity_id')
+                   | list }}
