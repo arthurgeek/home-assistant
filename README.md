@@ -9,6 +9,7 @@ YAML packages for the automations, sensors and scripts.
 | `configuration.yaml` | Core config |
 | `packages/areas/` | One file per room or outdoor area |
 | `packages/core/` | Notifications and other plumbing the rest builds on |
+| `packages/modes/` | House mode (day, night, away) |
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
 

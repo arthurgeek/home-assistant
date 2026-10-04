@@ -1,0 +1,84 @@
+input_select:
+  house_mode:
+    name: House Mode
+    icon: mdi:home-analytics
+    options:
+      - day
+      - night
+      - away
+
+template:
+  - sensor:
+      - name: "House Mode"
+        unique_id: house_mode
+        icon: >-
+          {% if is_state('input_select.house_mode', 'day') %}
+            mdi:weather-sunny
+          {% elif is_state('input_select.house_mode', 'night') %}
+            mdi:weather-night
+          {% else %}
+            mdi:home-export-outline
+          {% endif %}
+        state: "{{ states('input_select.house_mode') }}"
+
+script:
+  change_house_mode:
+    alias: House mode · Switch
+    description: Cycles to the next house mode option
+    sequence:
+      - action: input_select.select_next
+        target:
+          entity_id: input_select.house_mode
+
+automation:
+  - id: house_mode_day_transition
+    alias: House Mode · Switch to Day
+    description: Switches house mode to day at daylight if someone is home
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_is_dark
+        to: 'off'
+        for:
+          minutes: 5
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.anyone_home
+        state: 'on'
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: input_select.house_mode
+            state: day
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: day
+
+  - id: house_mode_night_transition
+    alias: House Mode · Switch to Night
+    description: Switches house mode to night when dark if someone is home
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.doorbell_is_dark
+        to: 'on'
+        for:
+          minutes: 5
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.anyone_home
+        state: 'on'
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: input_select.house_mode
+            state: night
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: night
