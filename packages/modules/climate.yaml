@@ -1,0 +1,10 @@
+script:
+  turn_off_all_acs:
+    alias: Turn Off All Air Conditioners
+    description: Turns off all 6 air conditioners in the house
+    icon: mdi:air-conditioner-off
+    mode: parallel
+    sequence:
+      - action: climate.turn_off
+        target:
+          entity_id: all
