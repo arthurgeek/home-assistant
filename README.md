@@ -12,12 +12,16 @@ YAML packages for the automations, sensors and scripts.
 | `packages/modes/` | House mode (day, night, away) |
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
+| `themes/` | The Catppuccin theme |
 
 `automations.yaml`, `scripts.yaml` and `scenes.yaml` are the files the UI writes to; the logic is in `packages/`.
 
 ## Requirements
 
 Installed from [HACS](https://hacs.xyz) on the instance, not included here.
+
+Dashboard cards and theme:
+[Catppuccin theme](https://github.com/catppuccin/home-assistant).
 
 Integrations:
 [SmartThings Extra](https://github.com/mik-laj/ha_smartthing_extra),
