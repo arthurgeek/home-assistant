@@ -1,0 +1,97 @@
+blueprint:
+  name: Low battery
+  description: >-
+    When a battery in the given floors drops below a level, notifies both parents and adds a task to a to-do list; the
+    task is completed once the battery is back above that level. Devices that are in no area, such as the phones, are
+    left out.
+  domain: automation
+  input:
+    floors:
+      name: Floors
+      selector:
+        floor:
+          multiple: true
+    threshold:
+      name: Level
+      default: 15
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+    todo_list:
+      name: To-do list
+      description: Where the task waits until the battery is replaced
+      selector:
+        entity:
+          filter:
+            - domain: todo
+
+variables:
+  todo_list: !input todo_list
+  summary: "Trocar a bateria: {{ trigger.to_state.attributes.friendly_name }}"
+
+triggers:
+  - trigger: battery.level_crossed_threshold
+    id: low
+    target:
+      floor_id: !input floors
+    options:
+      behavior: each
+      threshold:
+        type: below
+        value:
+          number: !input threshold
+  - trigger: battery.level_crossed_threshold
+    id: recovered
+    target:
+      floor_id: !input floors
+    options:
+      behavior: each
+      threshold:
+        type: above
+        value:
+          number: !input threshold
+
+actions:
+  - choose:
+      - alias: The battery dropped
+        conditions:
+          - condition: trigger
+            id: low
+        sequence:
+          - action: script.notify_parents
+            data:
+              title: "🪫 Bateria baixa"
+              message: "{{ trigger.to_state.attributes.friendly_name }} está com {{ trigger.to_state.state }}%. Precisa de recarga ou troca de bateria."
+              channel: "General"
+              importance: "low"
+              notification_icon: "mdi:battery-alert"
+          - action: todo.get_items
+            target:
+              entity_id: !input todo_list
+            data:
+              status: needs_action
+            response_variable: pending
+          - if:
+              - condition: template
+                value_template: "{{ summary not in (pending[todo_list]['items'] | map(attribute='summary') | list) }}"
+            then:
+              - action: todo.add_item
+                target:
+                  entity_id: !input todo_list
+                data:
+                  item: "{{ summary }}"
+                  description: "{{ trigger.to_state.state }}% às {{ now().strftime('%H:%M de %d/%m') }}"
+      - alias: The battery is back up
+        conditions:
+          - condition: trigger
+            id: recovered
+        sequence:
+          - action: todo.update_item
+            target:
+              entity_id: !input todo_list
+            data:
+              item: "{{ summary }}"
+              status: completed
+            continue_on_error: true

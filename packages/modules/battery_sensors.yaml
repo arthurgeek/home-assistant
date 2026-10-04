@@ -1,0 +1,24 @@
+automation:
+  - id: low_battery_notification
+    alias: Battery · Low Level
+    description: Notifies both parents and adds a task when a battery in the house drops below 15%
+    use_blueprint:
+      path: home/battery_low.yaml
+      input:
+        floors:
+          - ground_floor
+          - upper_floor
+          - outside
+        threshold: 15
+        todo_list: todo.house_projects
+
+template:
+  - sensor:
+      # for the Casa feed: how many batteries are below 15% (the blueprint's level) and which
+      - name: Low Batteries
+        unique_id: low_batteries
+        default_entity_id: sensor.low_batteries
+        icon: mdi:battery-alert
+        state: "{% from 'battery.jinja' import low_batteries %}{{ low_batteries(15) | from_json | count }}"
+        attributes:
+          devices: "{% from 'battery.jinja' import low_batteries %}{{ low_batteries(15) | from_json }}"

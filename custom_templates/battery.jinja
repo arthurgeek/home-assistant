@@ -1,0 +1,15 @@
+{#- Batteries. -#}
+
+{#- The battery sensors at or below `limit` percent, in an area of a floor (the phones are in no area, so they are
+    left out). As JSON, a list of {id, name, level}. -#}
+{%- macro low_batteries(limit) -%}
+  {%- set ns = namespace(items=[]) -%}
+  {%- for e in ['ground_floor', 'upper_floor', 'outside'] | map('floor_areas') | sum(start=[]) | map('area_entities')
+        | sum(start=[]) | select('match', '^sensor\\.') | select('is_state_attr', 'device_class', 'battery') -%}
+    {%- if is_number(states(e)) and states(e) | float < limit -%}
+      {%- set ns.items = ns.items + [{'id': e, 'name': state_attr(e, 'friendly_name') | regex_replace(' [Bb]attery.*$', ''),
+                                      'level': states(e) | float | round(0) | int}] -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {{- ns.items | to_json -}}
+{%- endmacro -%}
