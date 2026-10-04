@@ -1,0 +1,64 @@
+automation:
+  - id: routine_leaving_home
+    alias: Routine · Leaving Home
+    description: Executes energy saving actions and sends actionable alarm prompt when everyone leaves
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.anyone_home
+        to: 'off'
+        for:
+          minutes: 3
+    actions:
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.house_mode
+        data:
+          option: away
+
+      # Turn off all air conditioners across the house
+      - action: script.turn_off_all_acs
+
+      # Turn off all indoor lights and garage lights
+      - action: script.turn_off_indoor_lights
+      - action: script.turn_off_outside_lights
+
+      # If alarm is disarmed, send actionable prompt to arm away
+      - if:
+          - condition: state
+            entity_id: alarm_control_panel.home
+            state: disarmed
+        then:
+          - action: script.notify_parents
+            data:
+              title: "🏠 Casa Vazia: Alarme Desarmado"
+              message: "Arthur e Suellen saíram e a casa está vazia. Deseja armar o alarme?"
+              channel: "General"
+              importance: "high"
+              notification_icon: "mdi:shield-alert"
+              actions:
+                - action: "ARM_ALARM_AWAY"
+                  title: "Armar Alarme"
+                - action: "DISMISS"
+                  title: "Deixar Desarmado"
+
+  - id: leaving_home_arm_alarm_response
+    alias: Leaving Home · Arm Alarm Response
+    description: Arms the alarm when user taps Armar Alarme on the notification
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "ARM_ALARM_AWAY"
+    actions:
+      - action: alarm_control_panel.alarm_arm_away
+        target:
+          entity_id: alarm_control_panel.home
+      - action: script.notify_parents
+        data:
+          title: "Alarme Armado"
+          message: "O alarme da casa foi armado em modo Total."
+          channel: "General"
+          importance: "low"
+          notification_icon: "mdi:shield-check"
