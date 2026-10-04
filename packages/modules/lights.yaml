@@ -1,0 +1,37 @@
+script:
+  turn_off_all_lights:
+    alias: Turn Off All Lights
+    description: >-
+      Turns off every light inside and outside. The street area has no floor, so its lights are left to their
+      automations.
+    icon: mdi:lightbulb-off
+    mode: parallel
+    sequence:
+      - action: light.turn_off
+        target:
+          floor_id:
+            - ground_floor
+            - upper_floor
+            - outside
+
+  turn_off_indoor_lights:
+    alias: Turn Off Indoor Lights
+    description: Turns off the lights on the ground and upper floors, leaving the outside ones on
+    icon: mdi:lightbulb-off-outline
+    mode: parallel
+    sequence:
+      - action: light.turn_off
+        target:
+          floor_id:
+            - ground_floor
+            - upper_floor
+
+  turn_off_outside_lights:
+    alias: Turn Off Outside Lights
+    description: Turns off the lights on the Outside floor (the yard and the garage), leaving the street ones to their automation
+    icon: mdi:coach-lamp-variant
+    mode: parallel
+    sequence:
+      - action: light.turn_off
+        target:
+          floor_id: outside
