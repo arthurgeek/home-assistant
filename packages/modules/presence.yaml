@@ -1,0 +1,215 @@
+input_select:
+  presence_state_arthur:
+    name: Presence Arthur
+    icon: mdi:account
+    options:
+      - Just Arrived
+      - Just Left
+      - Home
+      - Away
+      - Extended Away
+
+  presence_state_suellen:
+    name: Presence Suellen
+    icon: mdi:account
+    options:
+      - Just Arrived
+      - Just Left
+      - Home
+      - Away
+      - Extended Away
+
+template:
+  - binary_sensor:
+      - name: "Living Room Presence"
+        unique_id: living_room_presence
+        device_class: occupancy
+        icon: mdi:motion-sensor
+        state: >-
+          {% set radar = is_state('binary_sensor.living_room_radar', 'on') %}
+          {% set vacuum_active = states('vacuum.roborock') in ['cleaning', 'returning'] %}
+          {{ radar and not vacuum_active }}
+
+      # Any occupancy sensor in an area of a floor. The street has no floor (the doorbell is class occupancy), this
+      # sensor is in no area, and the raw living room radar is class motion: living_room_presence above is the
+      # living room's occupancy sensor.
+      - name: "House Occupied"
+        unique_id: house_occupied
+        device_class: occupancy
+        icon: mdi:home-account
+        state: >-
+          {{ ['ground_floor', 'upper_floor', 'outside'] | map('floor_areas') | sum(start=[]) | map('area_entities')
+             | sum(start=[]) | select('match', '^binary_sensor\\.') | select('is_state_attr', 'device_class', 'occupancy')
+             | select('is_state', 'on') | list | count > 0 }}
+
+      - name: "Anyone Home"
+        unique_id: anyone_home
+        device_class: presence
+        icon: mdi:account-group
+        state: >-
+          {{ is_state('person.arthur', 'home')
+             or is_state('person.suellen', 'home')
+             or is_state('binary_sensor.house_occupied', 'on') }}
+
+      - name: "Everyone Home"
+        unique_id: everyone_home
+        device_class: presence
+        icon: mdi:account-multiple-check
+        state: >-
+          {{ is_state('person.arthur', 'home')
+             and is_state('person.suellen', 'home') }}
+
+automation:
+  - id: presence_transition_arthur
+    alias: Presence Transition · Arthur
+    description: Manages Arthur's granular presence lifecycle states
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: person.arthur
+        from: not_home
+        to: home
+        id: arrived
+      - trigger: state
+        entity_id: person.arthur
+        from: home
+        to: not_home
+        id: left
+      - trigger: state
+        entity_id: input_select.presence_state_arthur
+        to: Away
+        for:
+          hours: 24
+        id: extended_away
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: arrived
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_arthur
+                data:
+                  option: Just Arrived
+              - delay:
+                  minutes: 10
+              - if:
+                  - condition: state
+                    entity_id: person.arthur
+                    state: home
+                then:
+                  - action: input_select.select_option
+                    target:
+                      entity_id: input_select.presence_state_arthur
+                    data:
+                      option: Home
+
+          - conditions:
+              - condition: trigger
+                id: left
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_arthur
+                data:
+                  option: Just Left
+              - delay:
+                  minutes: 10
+              - if:
+                  - condition: state
+                    entity_id: person.arthur
+                    state: not_home
+                then:
+                  - action: input_select.select_option
+                    target:
+                      entity_id: input_select.presence_state_arthur
+                    data:
+                      option: Away
+
+          - conditions:
+              - condition: trigger
+                id: extended_away
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_arthur
+                data:
+                  option: Extended Away
+
+  - id: presence_transition_suellen
+    alias: Presence Transition · Suellen
+    description: Manages Suellen's granular presence lifecycle states
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: person.suellen
+        from: not_home
+        to: home
+        id: arrived
+      - trigger: state
+        entity_id: person.suellen
+        from: home
+        to: not_home
+        id: left
+      - trigger: state
+        entity_id: input_select.presence_state_suellen
+        to: Away
+        for:
+          hours: 24
+        id: extended_away
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: arrived
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_suellen
+                data:
+                  option: Just Arrived
+              - delay:
+                  minutes: 10
+              - if:
+                  - condition: state
+                    entity_id: person.suellen
+                    state: home
+                then:
+                  - action: input_select.select_option
+                    target:
+                      entity_id: input_select.presence_state_suellen
+                    data:
+                      option: Home
+
+          - conditions:
+              - condition: trigger
+                id: left
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_suellen
+                data:
+                  option: Just Left
+              - delay:
+                  minutes: 10
+              - if:
+                  - condition: state
+                    entity_id: person.suellen
+                    state: not_home
+                then:
+                  - action: input_select.select_option
+                    target:
+                      entity_id: input_select.presence_state_suellen
+                    data:
+                      option: Away
+
+          - conditions:
+              - condition: trigger
+                id: extended_away
+            sequence:
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.presence_state_suellen
+                data:
+                  option: Extended Away
