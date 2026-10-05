@@ -8,36 +8,34 @@ notify:
 script:
   announce:
     alias: Announce / Speak TTS
-    description: Centralized TTS speech announcement across media players
+    description: Speaks a message on a Music Assistant player after a chime, ducking and restoring the music
     mode: parallel
     fields:
       media_player:
-        description: Target media player entity (e.g. media_player.living_room, media_player.doorbell_speaker)
-        example: "media_player.living_room"
+        description: Music Assistant player to speak on
+        example: "media_player.living_room_ma"
         required: true
       message:
-        description: Text to speak
-        example: "The laundry cycle is complete."
+        description: Text to speak, in the language and voice set on the Edge TTS integration
+        example: "O ciclo de lavagem terminou."
         required: true
-      language:
-        description: Language code (defaults to pt-BR)
-        default: "pt-BR"
     sequence:
+      - variables:
+          tts_engine: tts.edge_tts_service_edge_tts
+          announce_volume: 40
       - if:
           - condition: template
             value_template: "{{ states(media_player) not in ['unavailable', 'unknown'] }}"
         then:
-          - action: tts.speak
+          - action: music_assistant.play_announcement
             continue_on_error: true
             target:
-              # Centralized TTS engine: change this single line to switch TTS providers globally
-              entity_id: tts.edge_tts_service_edge_tts
+              entity_id: "{{ media_player }}"
             data:
-              media_player_entity_id: "{{ media_player }}"
               message: "{{ message }}"
-              language: "{{ language | default('pt-BR', true) }}"
-              options:
-                voice: pt-BR-FranciscaNeural
+              tts_entity_id: "{{ tts_engine }}"
+              use_pre_announce: true
+              announce_volume: "{{ announce_volume }}"
 
   notify_person:
     alias: Notify Person
