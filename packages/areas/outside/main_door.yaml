@@ -1,0 +1,33 @@
+# Living room wall switch (right) -> Main Door (UniFi Access)
+# - Any toggle of the wall switch, on or off, unlocks the door: the switch's state decides nothing.
+# - The door relocks by itself, so the switch goes back to off 10 s later, as the door is locked again.
+automation:
+  - id: main_door_wall_switch
+    alias: Main Door Wall Switch
+    description: Unlock the main door whenever the wall switch is toggled (on or off)
+    # a toggle while the last one is still waiting to reset unlocks again, and restarts the wait
+    mode: restart
+    triggers:
+      # the two triggers skip a switch coming back from, or going to, unavailable
+      - trigger: switch.turned_on
+        target:
+          entity_id: switch.livingroomneardoorswitch_right
+        options:
+          behavior: each
+      - trigger: switch.turned_off
+        target:
+          entity_id: switch.livingroomneardoorswitch_right
+        options:
+          behavior: each
+    conditions:
+      # ignore changes made by automations (the reset below)
+      - condition: template
+        value_template: "{{ trigger.to_state.context.parent_id is none }}"
+    actions:
+      - action: button.press
+        target:
+          entity_id: button.main_door_unlock
+      - delay: "00:00:10"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.livingroomneardoorswitch_right
