@@ -1,0 +1,65 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#climate'
+name: Climatização
+icon: mdi:air-conditioner
+bg_blur: 16
+cards:
+  - type: custom:bubble-card
+    card_type: button
+    button_type: name
+    name: Desligar Todos os Ar-Condicionados
+    icon: mdi:power
+    tap_action:
+      action: call-service
+      service: script.turn_off_all_acs
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Sala de Estar
+    icon: mdi:sofa
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.living_room_ac
+    name: AC Sala de Estar
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Escritório
+    icon: mdi:desk
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.office_ac
+    name: AC Escritório
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Suíte Master
+    icon: mdi:bed-king
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.main_bedroom_ac
+    name: AC Suíte Master
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Quartos das Crianças
+    icon: mdi:human-male-female-child
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.kids_bedroom_1_ac
+    name: AC Quarto 1
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.kids_bedroom_3_ac
+    name: AC Quarto 3
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.kids_bedroom_2_ac
+    name: AC Quarto 2

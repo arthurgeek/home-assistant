@@ -5,6 +5,16 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
+lovelace:
+  mode: storage
+  dashboards:
+    catppuccin-home:
+      mode: yaml
+      title: "Casa"
+      icon: mdi:home-heart
+      show_in_sidebar: true
+      filename: dashboards/catppuccin_home.yaml
+
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml

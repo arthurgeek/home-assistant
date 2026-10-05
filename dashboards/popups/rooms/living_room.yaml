@@ -1,0 +1,34 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#living_room'
+name: Sala de Estar
+icon: mdi:sofa
+bg_blur: 16
+cards:
+  - type: custom:bubble-card
+    card_type: separator
+    name: Climatização
+    icon: mdi:air-conditioner
+
+  - type: custom:bubble-card
+    card_type: climate
+    entity: climate.living_room_ac
+    name: Ar-Condicionado Sala
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Áudio & Vídeo
+    icon: mdi:television-speaker
+
+  - type: custom:mini-media-player
+    entity: media_player.living_room
+    name: Sonos Beam
+    artwork: cover
+    hide:
+      power: true
+
+  - type: custom:mini-media-player
+    entity: media_player.tv_samsung_6_series_55
+    name: TV Samsung 55"
+    icon: mdi:television
+    artwork: cover

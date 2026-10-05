@@ -1,6 +1,7 @@
 # My Home Assistant config
 
-YAML packages for the automations, sensors and scripts.
+YAML packages for the automations, sensors and scripts, plus a phone-first dashboard ("Casa") in the Catppuccin palette.
+The interface is in Brazilian Portuguese; everything else is in English.
 
 ## Layout
 
@@ -12,6 +13,7 @@ YAML packages for the automations, sensors and scripts.
 | `packages/modes/` | House mode (day, night, away) |
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
+| `dashboards/` | The Casa dashboard: views, cards, pop-ups and card templates |
 | `themes/` | The Catppuccin theme |
 
 `automations.yaml`, `scripts.yaml` and `scenes.yaml` are the files the UI writes to; the logic is in `packages/`.
@@ -21,6 +23,14 @@ YAML packages for the automations, sensors and scripts.
 Installed from [HACS](https://hacs.xyz) on the instance, not included here.
 
 Dashboard cards and theme:
+[Bubble Card](https://github.com/Clooos/Bubble-Card),
+[button-card](https://github.com/custom-cards/button-card),
+[layout-card](https://github.com/thomasloven/lovelace-layout-card),
+[card-mod](https://github.com/thomasloven/lovelace-card-mod),
+[Sonos Card](https://github.com/punxaphil/custom-sonos-card),
+[Mini Media Player](https://github.com/kalkih/mini-media-player),
+[mini-graph-card](https://github.com/kalkih/mini-graph-card),
+[Weather Forecast Card](https://github.com/troinine/ha-weather-forecast-card),
 [Catppuccin theme](https://github.com/catppuccin/home-assistant).
 
 Integrations:

@@ -1,0 +1,457 @@
+title: Home
+path: home
+icon: mdi:home
+type: custom:grid-layout
+layout:
+  max_cols: 1
+  padding: 0 0 100px 0
+cards:
+  # ========================================================
+  # POPUPS (Rendered as bottom modals via Bubble Card)
+  # ========================================================
+  - !include ../popups/lights.yaml
+  - !include ../popups/climate.yaml
+  - !include ../popups/media.yaml
+  - !include ../popups/vacuum.yaml
+  - !include ../popups/calendar.yaml
+  - !include ../popups/weather.yaml
+  - !include ../popups/rooms/living_room.yaml
+  - !include ../popups/rooms/office.yaml
+  - !include ../popups/rooms/main_bedroom.yaml
+  - !include ../popups/rooms/kids_bedrooms.yaml
+
+  # ========================================================
+  # 1. TOP HEADER SECTION (Greeting + Time + Context Chips)
+  # ========================================================
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    styles:
+      card:
+        - background: "transparent"
+        - border: "none"
+        - box-shadow: "none"
+        - padding: "16px 8px 4px 8px"
+      grid:
+        - grid-template-areas: "'greeting' 'chips'"
+        - row-gap: "14px"
+    custom_fields:
+      greeting: |
+        [[[
+          const hour = new Date().getHours();
+          let greet = "Boa noite";
+          if (hour >= 5 && hour < 12) greet = "Bom dia";
+          else if (hour >= 12 && hour < 18) greet = "Boa tarde";
+
+          const options = { weekday: 'long', day: 'numeric', month: 'long' };
+          const dateStr = new Date().toLocaleDateString('pt-BR', options);
+          const capitalDate = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+              <div>
+                <h1 style="margin: 0; font-size: 26px; font-weight: 700; color: var(--catppuccin-text, #cad3f5); letter-spacing: -0.5px;">
+                  ${greet}, Arthur
+                </h1>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">
+                  ${capitalDate}
+                </p>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 24px; font-weight: 600; color: var(--catppuccin-peach, #f5a97f);">
+                  ${states['weather.forecast_home'] ? Math.round(states['weather.forecast_home'].attributes.temperature) : '--'}°C
+                </span>
+              </div>
+            </div>
+          `;
+        ]]]
+      chips: |
+        [[[
+          const ALARM = 'alarm_control_panel.home';
+          const C = {
+            green: 'var(--catppuccin-green, #a6da95)',
+            red: 'var(--catppuccin-red, #ed8796)',
+            yellow: 'var(--catppuccin-yellow, #eed49f)',
+            peach: 'var(--catppuccin-peach, #f5a97f)',
+            blue: 'var(--catppuccin-blue, #8aadf4)',
+            sapphire: 'var(--catppuccin-sapphire, #7dc4e4)',
+            mauve: 'var(--catppuccin-mauve, #c6a0f6)',
+            dim: 'var(--catppuccin-subtext0, #a5adcb)',
+          };
+          const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+          // --- Alarm (real Verisure panel) ---
+          const alarmState = states[ALARM]?.state;
+          const alarmMap = {
+            disarmed:    ['Alarme desarmado',      C.green,  'mdi:shield-off-outline'],
+            armed_away:  ['Alarme armado (fora)',  C.red,    'mdi:shield-lock'],
+            armed_home:  ['Alarme armado (casa)',  C.red,    'mdi:shield-home'],
+            armed_night: ['Alarme armado (noite)', C.red,    'mdi:shield-moon'],
+            arming:      ['Armando alarme…',       C.yellow, 'mdi:shield-sync'],
+            pending:     ['Alarme pendente',       C.yellow, 'mdi:shield-alert'],
+            triggered:   ['ALARME DISPARADO',      C.red,    'mdi:bell-ring'],
+          };
+          const [alarmText, alarmColor, alarmIcon] =
+            alarmMap[alarmState] || [`Alarme ${alarmState ?? 'indisponível'}`, C.dim, 'mdi:shield-alert-outline'];
+
+          // --- Weather ---
+          const w = states['weather.forecast_home'];
+          const wText = {
+            sunny: 'Ensolarado', 'clear-night': 'Noite limpa', cloudy: 'Nublado',
+            partlycloudy: 'Parcialmente nublado', rainy: 'Chuva', pouring: 'Chuva forte',
+            lightning: 'Raios', 'lightning-rainy': 'Tempestade', fog: 'Neblina',
+            hail: 'Granizo', snowy: 'Neve', windy: 'Ventania', exceptional: 'Excepcional',
+          };
+          const wIcon = {
+            sunny: 'mdi:weather-sunny', 'clear-night': 'mdi:weather-night', cloudy: 'mdi:weather-cloudy',
+            partlycloudy: 'mdi:weather-partly-cloudy', rainy: 'mdi:weather-rainy', pouring: 'mdi:weather-pouring',
+            lightning: 'mdi:weather-lightning', 'lightning-rainy': 'mdi:weather-lightning-rainy',
+            fog: 'mdi:weather-fog', hail: 'mdi:weather-hail', snowy: 'mdi:weather-snowy', windy: 'mdi:weather-windy',
+          };
+          const weatherText = w
+            ? `${Math.round(w.attributes.temperature)}° ${wText[w.state] || w.state}`
+            : 'Clima indisponível';
+          const weatherIcon = (w && wIcon[w.state]) || 'mdi:weather-cloudy';
+
+          // --- Next family event (calendar.familia) ---
+          const cal = states['calendar.familia'];
+          let calText = 'Sem compromissos';
+          if (cal?.attributes?.message && cal.attributes.start_time) {
+            const start = new Date(cal.attributes.start_time.replace(' ', 'T'));
+            const now = new Date();
+            const day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const day1 = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+            const diff = Math.round((day1 - day0) / 86400000);
+            const pad = (n) => String(n).padStart(2, '0');
+            const hhmm = cal.attributes.all_day ? '' : ` ${pad(start.getHours())}:${pad(start.getMinutes())}`;
+            const weekdays = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+            const when = diff <= 0 ? 'hoje'
+              : diff === 1 ? 'amanhã'
+              : diff < 7 ? weekdays[start.getDay()]
+              : `${pad(start.getDate())}/${pad(start.getMonth() + 1)}`;
+            let title = cal.attributes.message;
+            if (title.length > 26) title = title.slice(0, 25) + '…';
+            calText = `${title} • ${when}${hhmm}`;
+          }
+
+          // --- Lights / ACs ---
+          const countOn = (ids, test) => ids.filter(id => test(states[id]?.state)).length;
+          const lightsOn = countOn(['light.office_light', 'light.garage_light', 'light.garage_front_light', 'light.street_lights'], s => s === 'on');
+          const acsOn = countOn(Object.keys(states).filter(id => id.startsWith('climate.')), s => s && !['off', 'unavailable', 'unknown'].includes(s));
+
+          const chip = (icon, color, text, onclick) => `
+            <div onclick="${onclick}" style="
+              display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+              background: rgba(54, 58, 79, 0.6); backdrop-filter: blur(10px);
+              border-radius: 20px; border: 1px solid rgba(202, 211, 245, 0.08);
+              cursor: pointer; white-space: nowrap;
+            ">
+              <ha-icon icon="${icon}" style="--mdc-icon-size: 16px; color: ${color};"></ha-icon>
+              <span style="font-size: 12px; font-weight: 500; color: var(--catppuccin-text, #cad3f5);">${text}</span>
+            </div>`;
+          const goto = (hash) => `window.location.hash='${hash}'`;
+          const moreInfo = (eid) => `this.dispatchEvent(new CustomEvent('hass-more-info',{bubbles:true,composed:true,detail:{entityId:'${eid}'}}))`;
+
+          return `
+            <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch;">
+              ${chip(alarmIcon, alarmColor, alarmText, moreInfo(ALARM))}
+              ${chip(weatherIcon, C.sapphire, weatherText, goto('#weather'))}
+              ${chip('mdi:calendar-clock', C.mauve, calText, goto('#calendar'))}
+              ${chip('mdi:air-conditioner', acsOn > 0 ? C.blue : C.dim,
+                     acsOn > 0 ? `${plural(acsOn, 'AC ligado', 'ACs ligados')}` : 'ACs desligados', goto('#climate'))}
+              ${chip('mdi:lightbulb', lightsOn > 0 ? C.peach : C.dim,
+                     lightsOn > 0 ? `${plural(lightsOn, 'luz acesa', 'luzes acesas')}` : 'Luzes apagadas', goto('#lights'))}
+            </div>
+          `;
+        ]]]
+
+  # ========================================================
+  # 2. PERSON BUBBLES (Quem está em casa)
+  # ========================================================
+  - type: horizontal-stack
+    cards:
+      - type: custom:bubble-card
+        card_type: button
+        button_type: state
+        entity: person.arthur
+        name: Arthur
+        icon: mdi:account
+      - type: custom:bubble-card
+        card_type: button
+        button_type: state
+        entity: person.suellen
+        name: Suellen
+        icon: mdi:account
+
+  # ========================================================
+  # 3. NOW PLAYING (one card per Sonos, shown only while it has playback)
+  # ========================================================
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: media_player.living_room
+        state:
+          - playing
+          - paused
+    card:
+      type: custom:mini-media-player
+      entity: media_player.living_room
+      name: Sala
+      artwork: cover
+      hide:
+        power: true
+        source: true
+      card_mod:
+        style: |
+          ha-card {
+            background: rgba(36, 39, 58, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(202, 211, 245, 0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            margin: 0 8px 16px 8px;
+          }
+
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: media_player.unnamed_room
+        state:
+          - playing
+          - paused
+    card:
+      type: custom:mini-media-player
+      entity: media_player.unnamed_room
+      name: Sonos Move
+      artwork: cover
+      hide:
+        power: true
+        source: true
+      card_mod:
+        style: |
+          ha-card {
+            background: rgba(36, 39, 58, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(202, 211, 245, 0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            margin: 0 8px 16px 8px;
+          }
+
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: media_player.kids_bedroom_kids_bedroom
+        state:
+          - playing
+          - paused
+    card:
+      type: custom:mini-media-player
+      entity: media_player.kids_bedroom_kids_bedroom
+      name: Quarto das Crianças
+      artwork: cover
+      hide:
+        power: true
+        source: true
+      card_mod:
+        style: |
+          ha-card {
+            background: rgba(36, 39, 58, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(202, 211, 245, 0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            margin: 0 8px 16px 8px;
+          }
+
+  # ========================================================
+  # 3. CONDITIONAL ROBOROCK ACTIVE CLEANING ALERT
+  # ========================================================
+  - type: conditional
+    conditions:
+      - entity: vacuum.roborock
+        state_not: "docked"
+    card:
+      type: custom:button-card
+      template: base_card
+      styles:
+        card:
+          - margin: "0 8px 16px 8px"
+          - border: "1px solid rgba(166, 218, 149, 0.3)"
+      custom_fields:
+        content: |
+          [[[
+            const state = states['vacuum.roborock']?.state;
+            const bat = states['sensor.roborock_qrevo_curv_series_battery']?.state;
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(166, 218, 149, 0.2); display: flex; align-items: center; justify-content: center;">
+                    <ha-icon icon="mdi:robot-vacuum" style="color: var(--catppuccin-green, #a6da95); --mdc-icon-size: 22px;"></ha-icon>
+                  </div>
+                  <div style="text-align: left;">
+                    <span style="font-weight: 600; color: var(--catppuccin-text, #cad3f5); font-size: 14px;">Roborock em Ação</span>
+                    <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--catppuccin-subtext0, #a5adcb); text-transform: capitalize;">${state} • Bateria: ${bat}%</p>
+                  </div>
+                </div>
+                <div onclick="window.location.hash='#vacuum'" style="padding: 6px 12px; background: rgba(198, 160, 246, 0.2); border-radius: 14px; color: var(--catppuccin-mauve, #c6a0f6); font-size: 12px; font-weight: 600; cursor: pointer;">
+                  Ver Mapa
+                </div>
+              </div>
+            `;
+          ]]]
+      tap_action:
+        action: navigate
+        navigation_path: "#vacuum"
+
+  # ========================================================
+  # 4. BENTO ROOMS GRID (2 Columns Responsive)
+  # ========================================================
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    styles:
+      card:
+        - background: "transparent"
+        - border: "none"
+        - box-shadow: "none"
+        - padding: "0 8px 8px 8px"
+    custom_fields:
+      title: |
+        [[[
+          return `
+            <div style="text-align: left; margin-bottom: 8px;">
+              <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5); letter-spacing: -0.3px;">Cômodos</span>
+            </div>
+          `;
+        ]]]
+
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      # --- SALA DE ESTAR ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Sala de Estar"
+          room_icon: "mdi:sofa"
+          climate_entity: "climate.living_room_ac"
+          motion_sensor: "binary_sensor.living_room_radar_presence"
+          popup_hash: "#living_room"
+
+      # --- ESCRITÓRIO ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Escritório"
+          room_icon: "mdi:desk"
+          climate_entity: "climate.office_ac"
+          humidity_sensor: "sensor.office_office_air_conditioner_humidity"
+          light_entity: "light.office_light"
+          popup_hash: "#office"
+
+      # --- SUÍTE MASTER ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Suíte Master"
+          room_icon: "mdi:bed-king"
+          temp_sensor: "sensor.main_bedroom_main_bedroom_ac_temperature"
+          humidity_sensor: "sensor.main_bedroom_main_bedroom_ac_humidity"
+          climate_entity: "climate.main_bedroom_ac"
+          popup_hash: "#main_bedroom"
+
+      # --- QUARTOS CRIANÇAS ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Quartos Crianças"
+          room_icon: "mdi:human-male-female-child"
+          temp_sensor: "sensor.kids_bedroom_1_ac_temperature"
+          humidity_sensor: "sensor.kids_bedroom_1_ac_humidity"
+          climate_entity: "climate.kids_bedroom_1_ac"
+          popup_hash: "#kids_bedrooms"
+
+      # --- GARAGEM & ÁREA ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Garagem & Área"
+          room_icon: "mdi:garage"
+          light_entity: "light.garage_light"
+          popup_hash: "#lights"
+
+      # --- CLIMATIZAÇÃO GERAL ---
+      - type: custom:button-card
+        template: room_card
+        variables:
+          room_name: "Climatização"
+          room_icon: "mdi:air-conditioner"
+          climate_entity: "climate.living_room_ac"
+          popup_hash: "#climate"
+
+  # ========================================================
+  # 5. AGENDA DA FAMÍLIA (GOOGLE CALENDAR)
+  # ========================================================
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    styles:
+      card:
+        - background: "transparent"
+        - border: "none"
+        - box-shadow: "none"
+        - padding: "16px 8px 8px 8px"
+    custom_fields:
+      title: |
+        [[[
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5); letter-spacing: -0.3px;">Próximos Compromissos</span>
+              <span onclick="window.location.hash='#calendar'" style="font-size: 13px; color: var(--catppuccin-mauve, #c6a0f6); font-weight: 600; cursor: pointer;">Ver Agenda</span>
+            </div>
+          `;
+        ]]]
+
+  - type: calendar
+    entities:
+      - calendar.familia
+    initial_view: listDay
+    card_mod:
+      style: |
+        ha-card {
+          background: rgba(36, 39, 58, 0.7);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-radius: 24px;
+          border: 1px solid rgba(202, 211, 245, 0.08);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+          margin: 0 8px 16px 8px;
+        }
+
+  # ========================================================
+  # 6. FLOATING BOTTOM NAVIGATION (highlights the open pop-up)
+  # ========================================================
+  - type: custom:bubble-card
+    card_type: horizontal-buttons-stack
+    highlight_current_view: true
+    auto_order: false
+    1_name: Luzes
+    1_icon: mdi:lightbulb-outline
+    1_link: '#lights'
+    2_name: Clima
+    2_icon: mdi:air-conditioner
+    2_link: '#climate'
+    3_name: Mídia
+    3_icon: mdi:speaker
+    3_link: '#media'
+    4_name: Aspirador
+    4_icon: mdi:robot-vacuum
+    4_link: '#vacuum'
+    5_name: Agenda
+    5_icon: mdi:calendar-month
+    5_link: '#calendar'

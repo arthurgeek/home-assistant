@@ -1,0 +1,100 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#lights'
+name: Iluminação
+icon: mdi:lightbulb-multiple
+bg_blur: 16
+cards:
+  - type: custom:bubble-card
+    card_type: separator
+    name: Ações Rápidas
+    icon: mdi:lightning-bolt
+
+  - type: horizontal-stack
+    cards:
+      - type: custom:bubble-card
+        card_type: button
+        button_type: name
+        name: Apagar Luzes Internas
+        icon: mdi:home-lightbulb-outline
+        tap_action:
+          action: call-service
+          service: script.turn_off_indoor_lights
+      - type: custom:bubble-card
+        card_type: button
+        button_type: name
+        name: Apagar Todas
+        icon: mdi:lightbulb-off
+        tap_action:
+          action: call-service
+          service: script.turn_off_all_lights
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Interruptores Nomeados
+    icon: mdi:wall-sconce-flat
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: light.office_light
+    name: Escritório
+    icon: mdi:desk
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: light.garage_light
+    name: Garagem Principal
+    icon: mdi:garage
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: light.garage_front_light
+    name: Garagem Frontal
+    icon: mdi:garage-variant
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: light.street_lights
+    name: Luzes Externas / Jardim
+    icon: mdi:coach-lamp
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Módulos Sonoff ZBMINIR2
+    icon: mdi:chip
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.zbminir2_1
+    name: ZBMINIR2-1
+    icon: mdi:lightbulb-outline
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.0x08b95ffffeb920ba
+    name: ZBMINIR2-2
+    icon: mdi:lightbulb-outline
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.0x08b95ffffeb9811c
+    name: ZBMINIR2-3
+    icon: mdi:lightbulb-outline
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.zbminir2_4
+    name: ZBMINIR2-4
+    icon: mdi:lightbulb-outline
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.zbminir2_5
+    name: ZBMINIR2-5
+    icon: mdi:lightbulb-outline
+
+  - type: custom:bubble-card
+    card_type: button
+    entity: switch.zbminir2_6
+    name: ZBMINIR2-6
+    icon: mdi:lightbulb-outline

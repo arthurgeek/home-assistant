@@ -1,0 +1,43 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#calendar'
+name: Agenda da Família
+icon: mdi:calendar-month
+bg_blur: 16
+cards:
+  - type: custom:bubble-card
+    card_type: separator
+    name: Calendário da Família
+    icon: mdi:account-group
+
+  - type: calendar
+    entities:
+      - calendar.familia
+      - calendar.pessoal
+      - calendar.birthdays
+    initial_view: dayGridMonth
+    card_mod:
+      style: |
+        ha-card {
+          background: rgba(36, 39, 58, 0.7);
+          border-radius: 20px;
+          border: 1px solid rgba(202, 211, 245, 0.08);
+          padding: 8px;
+        }
+
+  - type: custom:bubble-card
+    card_type: separator
+    name: Aniversários Próximos
+    icon: mdi:cake-variant
+
+  - type: calendar
+    entities:
+      - calendar.birthdays
+    initial_view: listMonth
+    card_mod:
+      style: |-
+        ha-card {
+          background: rgba(36, 39, 58, 0.6);
+          border-radius: 20px;
+          border: 1px solid rgba(202, 211, 245, 0.08);
+        }

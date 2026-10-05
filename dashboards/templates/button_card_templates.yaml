@@ -1,0 +1,252 @@
+# Catppuccin Macchiato Button Card Templates
+
+base_card:
+  variables:
+    accent_color: "var(--catppuccin-mauve, #c6a0f6)"
+  styles:
+    card:
+      - background: "rgba(36, 39, 58, 0.7)"
+      - backdrop-filter: "blur(16px)"
+      - -webkit-backdrop-filter: "blur(16px)"
+      - border-radius: "24px"
+      - border: "1px solid rgba(202, 211, 245, 0.08)"
+      - box-shadow: "0 8px 24px rgba(0, 0, 0, 0.25)"
+      - padding: "16px"
+      - transition: "all 0.25s ease-in-out"
+    name:
+      - color: "var(--catppuccin-text, #cad3f5)"
+      - font-weight: "600"
+      - font-size: "16px"
+    label:
+      - color: "var(--catppuccin-subtext0, #a5adcb)"
+      - font-size: "12px"
+
+header_pill:
+  variables:
+    icon_color: "var(--catppuccin-mauve, #c6a0f6)"
+    bg_color: "rgba(54, 58, 79, 0.5)"
+    active_color: "var(--catppuccin-green, #a6da95)"
+    is_active: false
+  styles:
+    card:
+      - background: "[[[ return variables.bg_color ]]]"
+      - backdrop-filter: "blur(12px)"
+      - -webkit-backdrop-filter: "blur(12px)"
+      - border-radius: "30px"
+      - border: "1px solid rgba(202, 211, 245, 0.08)"
+      - padding: "8px 14px"
+      - height: "42px"
+      - box-shadow: "0 4px 12px rgba(0, 0, 0, 0.15)"
+      - display: "flex"
+      - align-items: "center"
+      - justify-content: "center"
+    grid:
+      - grid-template-areas: "'i n'"
+      - grid-template-columns: "min-content auto"
+      - column-gap: "8px"
+    icon:
+      - color: "[[[ return variables.is_active ? variables.active_color : variables.icon_color ]]]"
+      - width: "18px"
+      - height: "18px"
+    name:
+      - color: "var(--catppuccin-text, #cad3f5)"
+      - font-size: "13px"
+      - font-weight: "500"
+      - white-space: "nowrap"
+
+room_card:
+  variables:
+    room_name: "Cômodo"
+    room_icon: "mdi:home"
+    temp_sensor: ""
+    humidity_sensor: ""
+    light_entity: ""
+    motion_sensor: ""
+    popup_hash: "#"
+    accent_color: "var(--catppuccin-mauve, #c6a0f6)"
+  styles:
+    card:
+      - background: "rgba(36, 39, 58, 0.75)"
+      - backdrop-filter: "blur(16px)"
+      - -webkit-backdrop-filter: "blur(16px)"
+      - border-radius: "24px"
+      - border: "1px solid rgba(202, 211, 245, 0.08)"
+      - box-shadow: "0 8px 24px rgba(0, 0, 0, 0.25)"
+      - padding: "16px"
+      - height: "140px"
+      - position: "relative"
+      - overflow: "hidden"
+    grid:
+      - grid-template-areas: "'icon rocker' 'info rocker'"
+      - grid-template-columns: "1fr 48px"
+      - grid-template-rows: "min-content 1fr"
+      - row-gap: "12px"
+    custom_fields:
+      icon:
+        - justify-self: "start"
+        - align-self: "center"
+      rocker:
+        - justify-self: "end"
+        - align-self: "stretch"
+      info:
+        - justify-self: "start"
+        - align-self: "end"
+  custom_fields:
+    icon: |
+      [[[
+        const isLightOn = variables.light_entity && states[variables.light_entity]?.state === 'on';
+        const hasMotion = variables.motion_sensor && states[variables.motion_sensor]?.state === 'on';
+        const iconBg = isLightOn ? 'rgba(245, 169, 127, 0.2)' : 'rgba(54, 58, 79, 0.6)';
+        const iconColor = isLightOn ? 'var(--catppuccin-peach, #f5a97f)' : 'var(--catppuccin-subtext0, #a5adcb)';
+        return `
+          <div style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: ${iconBg};
+            color: ${iconColor};
+            box-shadow: ${isLightOn ? '0 0 15px rgba(245, 169, 127, 0.35)' : 'none'};
+            transition: all 0.3s ease;
+          ">
+            <ha-icon icon="${variables.room_icon}" style="--mdc-icon-size: 24px;"></ha-icon>
+          </div>
+        `;
+      ]]]
+    info: |
+      [[[
+        let temp = null;
+        if (variables.temp_sensor && states[variables.temp_sensor]) {
+          const s = states[variables.temp_sensor];
+          let val = parseFloat(s.state);
+          if (!isNaN(val)) {
+            if (s.attributes?.unit_of_measurement === '°F') {
+              val = (val - 32) * 5 / 9;
+            }
+            temp = Math.round(val);
+          }
+        } else if (variables.climate_entity && states[variables.climate_entity]) {
+          const c = states[variables.climate_entity];
+          let cur = c.attributes?.current_temperature;
+          if (cur !== undefined && cur !== null) {
+            temp = Math.round(parseFloat(cur));
+          }
+        }
+
+        let hum = null;
+        if (variables.humidity_sensor && states[variables.humidity_sensor]) {
+          const h = states[variables.humidity_sensor];
+          let val = parseFloat(h.state);
+          if (!isNaN(val)) hum = Math.round(val);
+        } else if (variables.climate_entity && states[variables.climate_entity]) {
+          const c = states[variables.climate_entity];
+          let curH = c.attributes?.current_humidity;
+          if (curH !== undefined && curH !== null) {
+            hum = Math.round(parseFloat(curH));
+          }
+        }
+
+        let isLightOn = variables.light_entity && states[variables.light_entity]?.state === 'on';
+        let lightStatus = isLightOn ? 'Luz acesa' : 'Luz apagada';
+
+        let stats = [];
+        if (temp !== null) stats.push(`${temp}°C`);
+        if (hum !== null) stats.push(`${hum}%`);
+        let statsLine = stats.length > 0 ? stats.join(' • ') : lightStatus;
+
+        return `
+          <div style="text-align: left; display: flex; flex-direction: column; gap: 4px;">
+            <span style="color: var(--catppuccin-text, #cad3f5); font-weight: 600; font-size: 16px; letter-spacing: -0.2px;">
+              ${variables.room_name}
+            </span>
+            <span style="color: var(--catppuccin-subtext0, #a5adcb); font-size: 13px; font-weight: 400;">
+              ${statsLine}
+            </span>
+          </div>
+        `;
+      ]]]
+    rocker: |
+      [[[
+        if (variables.light_entity) {
+          const isOn = states[variables.light_entity]?.state === 'on';
+          const bg = isOn ? 'var(--catppuccin-peach, #f5a97f)' : 'rgba(54, 58, 79, 0.8)';
+          const shadow = isOn ? '0 0 16px rgba(245, 169, 127, 0.4)' : 'none';
+          return `
+            <div style="
+              width: 44px; height: 100%; min-height: 96px;
+              background: rgba(30, 32, 48, 0.6); border-radius: 22px; padding: 4px;
+              display: flex; flex-direction: column; justify-content: ${isOn ? 'flex-start' : 'flex-end'}; align-items: center;
+              border: 1px solid rgba(202, 211, 245, 0.08); box-sizing: border-box;
+            ">
+              <div style="
+                width: 36px; height: 44px; background: ${bg}; border-radius: 18px; box-shadow: ${shadow};
+                display: flex; align-items: center; justify-content: center;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              ">
+                <ha-icon icon="${isOn ? 'mdi:lightbulb' : 'mdi:lightbulb-outline'}"
+                         style="--mdc-icon-size: 20px; color: ${isOn ? '#1e2030' : 'var(--catppuccin-subtext0, #a5adcb)'};">
+                </ha-icon>
+              </div>
+            </div>
+          `;
+        } else if (variables.climate_entity) {
+          const state = states[variables.climate_entity]?.state;
+          const isOn = !['off', 'unavailable'].includes(state);
+          const bg = isOn ? 'var(--catppuccin-blue, #8aadf4)' : 'rgba(54, 58, 79, 0.8)';
+          const shadow = isOn ? '0 0 16px rgba(138, 173, 244, 0.4)' : 'none';
+          return `
+            <div style="
+              width: 44px; height: 100%; min-height: 96px;
+              background: rgba(30, 32, 48, 0.6); border-radius: 22px; padding: 4px;
+              display: flex; flex-direction: column; justify-content: ${isOn ? 'flex-start' : 'flex-end'}; align-items: center;
+              border: 1px solid rgba(202, 211, 245, 0.08); box-sizing: border-box;
+            ">
+              <div style="
+                width: 36px; height: 44px; background: ${bg}; border-radius: 18px; box-shadow: ${shadow};
+                display: flex; align-items: center; justify-content: center;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+              ">
+                <ha-icon icon="${isOn ? 'mdi:snowflake' : 'mdi:air-conditioner'}"
+                         style="--mdc-icon-size: 20px; color: ${isOn ? '#1e2030' : 'var(--catppuccin-subtext0, #a5adcb)'};">
+                </ha-icon>
+              </div>
+            </div>
+          `;
+        }
+        return '';
+      ]]]
+  tap_action:
+    action: navigate
+    navigation_path: "[[[ return variables.popup_hash ]]]"
+
+scene_button:
+  variables:
+    scene_name: "Cena"
+    scene_icon: "mdi:star"
+    accent_color: "var(--catppuccin-mauve, #c6a0f6)"
+  styles:
+    card:
+      - background: "rgba(54, 58, 79, 0.6)"
+      - backdrop-filter: "blur(12px)"
+      - -webkit-backdrop-filter: "blur(12px)"
+      - border-radius: "18px"
+      - border: "1px solid rgba(202, 211, 245, 0.08)"
+      - padding: "12px 16px"
+      - display: "flex"
+      - align-items: "center"
+      - justify-content: "center"
+      - gap: "8px"
+      - transition: "all 0.2s ease"
+    grid:
+      - grid-template-areas: "'i n'"
+      - grid-template-columns: "min-content auto"
+    icon:
+      - color: "[[[ return variables.accent_color ]]]"
+      - width: "20px"
+      - height: "20px"
+    name:
+      - color: "var(--catppuccin-text, #cad3f5)"
+      - font-size: "13px"
+      - font-weight: "600"
