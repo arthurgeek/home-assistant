@@ -1,37 +1,29 @@
 automation:
-  - id: outside_lights_on
-    alias: Outside Lights On at Dark
-    description: Turn on outside lights when dark for 10 minutes
+  - id: outside_lights_by_daylight
+    alias: Outside Lights · Follow Daylight
+    description: Turn outside lights on after 10 minutes of dark and off after 10 minutes of daylight
     triggers:
-      - trigger: state
-        entity_id:
-          - binary_sensor.doorbell_is_dark
-        for:
-          minutes: 10
-        from:
-          - 'off'
-          - 'on'
-    actions:
-      - action: switch.turn_on
+      - trigger: illuminance.cleared
         target:
-          entity_id: light.street_lights
-
-  - id: outside_lights_off
-    alias: Outside Lights Off at Daylight
-    description: Turn off outside lights when daylight for 10 minutes
-    triggers:
-      - trigger: state
-        entity_id:
-          - binary_sensor.doorbell_is_dark
-        for:
-          minutes: 10
-        from:
-          - 'on'
-          - 'off'
-    actions:
-      - action: switch.turn_off
+          area_id: street
+        options:
+          behavior: all
+          for:
+            minutes: 10
+        id: dark
+      - trigger: illuminance.detected
         target:
-          entity_id: light.street_lights
+          area_id: street
+        options:
+          behavior: all
+          for:
+            minutes: 10
+        id: light
+    actions:
+      # the street area has no floor, so only this automation ever switches its lights
+      - action: "light.turn_{{ 'on' if trigger.id == 'dark' else 'off' }}"
+        target:
+          area_id: street
 
   - id: samsung_ac_night_lighting
     alias: Turn Off AC Display Light at Night
@@ -70,3 +62,14 @@ script:
             - mode/vs/0
             - x.com.samsung.da.options:
                 - Light_On
+
+template:
+  - binary_sensor:
+      # the doorbell's "is dark" is on in the dark; as a light-class sensor, on is daylight
+      - name: Street Daylight
+        unique_id: street_daylight
+        default_entity_id: binary_sensor.street_daylight
+        device_class: light
+        icon: mdi:weather-sunny
+        state: "{{ is_state('binary_sensor.doorbell_is_dark', 'off') }}"
+        availability: "{{ states('binary_sensor.doorbell_is_dark') in ['on', 'off'] }}"

@@ -31,54 +31,36 @@ script:
           entity_id: input_select.house_mode
 
 automation:
-  - id: house_mode_day_transition
-    alias: House Mode · Switch to Day
-    description: Switches house mode to day at daylight if someone is home
+  - id: house_mode_daylight_transition
+    alias: House Mode · Follow Daylight
+    description: Switches house mode to day at daylight and to night when dark, if someone is home
     mode: single
     triggers:
-      - trigger: state
-        entity_id: binary_sensor.doorbell_is_dark
-        to: 'off'
-        for:
-          minutes: 5
+      - trigger: illuminance.detected
+        target:
+          area_id: street
+        options:
+          behavior: all
+          for:
+            minutes: 5
+        id: day
+      - trigger: illuminance.cleared
+        target:
+          area_id: street
+        options:
+          behavior: all
+          for:
+            minutes: 5
+        id: night
     conditions:
       - condition: state
         entity_id: binary_sensor.anyone_home
         state: 'on'
-      - condition: not
-        conditions:
-          - condition: state
-            entity_id: input_select.house_mode
-            state: day
+      - condition: template
+        value_template: "{{ not is_state('input_select.house_mode', trigger.id) }}"
     actions:
       - action: input_select.select_option
         target:
           entity_id: input_select.house_mode
         data:
-          option: day
-
-  - id: house_mode_night_transition
-    alias: House Mode · Switch to Night
-    description: Switches house mode to night when dark if someone is home
-    mode: single
-    triggers:
-      - trigger: state
-        entity_id: binary_sensor.doorbell_is_dark
-        to: 'on'
-        for:
-          minutes: 5
-    conditions:
-      - condition: state
-        entity_id: binary_sensor.anyone_home
-        state: 'on'
-      - condition: not
-        conditions:
-          - condition: state
-            entity_id: input_select.house_mode
-            state: night
-    actions:
-      - action: input_select.select_option
-        target:
-          entity_id: input_select.house_mode
-        data:
-          option: night
+          option: "{{ trigger.id }}"
