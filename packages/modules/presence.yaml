@@ -59,29 +59,95 @@ template:
           {{ is_state('person.arthur', 'home')
              and is_state('person.suellen', 'home') }}
 
+script:
+  presence_reconcile:
+    alias: Presence · Reconcile
+    description: Re-syncs each person's presence helper with their actual person state (restart-proof safety net)
+    mode: queued
+    sequence:
+      - repeat:
+          for_each:
+            - arthur
+            - suellen
+          sequence:
+            - variables:
+                person: "{{ states('person.' ~ repeat.item) }}"
+                helper: "input_select.presence_state_{{ repeat.item }}"
+                current: "{{ states('input_select.presence_state_' ~ repeat.item) }}"
+                settled: >-
+                  {{ (now() - states['input_select.presence_state_' ~ repeat.item].last_changed).total_seconds() >= 600 }}
+                target: >-
+                  {% if person in ['unknown', 'unavailable'] %}{{ current }}
+                  {% elif person == 'home' %}
+                    {{ 'Just Arrived' if current == 'Just Arrived' and not settled else 'Home' }}
+                  {% else %}
+                    {% if current == 'Extended Away' %}Extended Away
+                    {% elif current == 'Just Left' and not settled %}Just Left
+                    {% else %}Away{% endif %}
+                  {% endif %}
+            - if:
+                - condition: template
+                  value_template: "{{ target != current }}"
+              then:
+                - action: input_select.select_option
+                  target:
+                    entity_id: "{{ helper }}"
+                  data:
+                    option: "{{ target }}"
+
 automation:
-  - id: presence_transition_arthur
-    alias: Presence Transition · Arthur
-    description: Manages Arthur's granular presence lifecycle states
-    mode: restart
+  - id: presence_transitions
+    alias: Presence · Transitions
+    description: >-
+      Moves each person's presence helper through Just Arrived → Home and Just Left → Away
+      without delays, so restarts and reloads can't leave a helper stuck
+    mode: parallel
     triggers:
       - trigger: state
-        entity_id: person.arthur
-        from: not_home
+        entity_id:
+          - person.arthur
+          - person.suellen
         to: home
+        not_from:
+          - unknown
+          - unavailable
         id: arrived
       - trigger: state
-        entity_id: person.arthur
+        entity_id:
+          - person.arthur
+          - person.suellen
         from: home
-        to: not_home
+        not_to:
+          - unknown
+          - unavailable
         id: left
       - trigger: state
-        entity_id: input_select.presence_state_arthur
+        entity_id:
+          - input_select.presence_state_arthur
+          - input_select.presence_state_suellen
+        to:
+          - Just Arrived
+          - Just Left
+        for:
+          minutes: 10
+        id: settle
+      - trigger: state
+        entity_id:
+          - input_select.presence_state_arthur
+          - input_select.presence_state_suellen
         to: Away
         for:
           hours: 24
         id: extended_away
+      - trigger: homeassistant
+        event: start
+        id: reconcile
+      - trigger: time_pattern
+        minutes: /30
+        id: reconcile
     actions:
+      - variables:
+          who: "{{ trigger.entity_id.split('.')[1] | replace('presence_state_', '') if trigger.entity_id is defined else '' }}"
       - choose:
           - conditions:
               - condition: trigger
@@ -89,127 +155,27 @@ automation:
             sequence:
               - action: input_select.select_option
                 target:
-                  entity_id: input_select.presence_state_arthur
+                  entity_id: "input_select.presence_state_{{ who }}"
                 data:
                   option: Just Arrived
-              - delay:
-                  minutes: 10
-              - if:
-                  - condition: state
-                    entity_id: person.arthur
-                    state: home
-                then:
-                  - action: input_select.select_option
-                    target:
-                      entity_id: input_select.presence_state_arthur
-                    data:
-                      option: Home
-
           - conditions:
               - condition: trigger
                 id: left
             sequence:
               - action: input_select.select_option
                 target:
-                  entity_id: input_select.presence_state_arthur
+                  entity_id: "input_select.presence_state_{{ who }}"
                 data:
                   option: Just Left
-              - delay:
-                  minutes: 10
-              - if:
-                  - condition: state
-                    entity_id: person.arthur
-                    state: not_home
-                then:
-                  - action: input_select.select_option
-                    target:
-                      entity_id: input_select.presence_state_arthur
-                    data:
-                      option: Away
-
           - conditions:
               - condition: trigger
                 id: extended_away
             sequence:
               - action: input_select.select_option
                 target:
-                  entity_id: input_select.presence_state_arthur
+                  entity_id: "input_select.presence_state_{{ who }}"
                 data:
                   option: Extended Away
-
-  - id: presence_transition_suellen
-    alias: Presence Transition · Suellen
-    description: Manages Suellen's granular presence lifecycle states
-    mode: restart
-    triggers:
-      - trigger: state
-        entity_id: person.suellen
-        from: not_home
-        to: home
-        id: arrived
-      - trigger: state
-        entity_id: person.suellen
-        from: home
-        to: not_home
-        id: left
-      - trigger: state
-        entity_id: input_select.presence_state_suellen
-        to: Away
-        for:
-          hours: 24
-        id: extended_away
-    actions:
-      - choose:
-          - conditions:
-              - condition: trigger
-                id: arrived
-            sequence:
-              - action: input_select.select_option
-                target:
-                  entity_id: input_select.presence_state_suellen
-                data:
-                  option: Just Arrived
-              - delay:
-                  minutes: 10
-              - if:
-                  - condition: state
-                    entity_id: person.suellen
-                    state: home
-                then:
-                  - action: input_select.select_option
-                    target:
-                      entity_id: input_select.presence_state_suellen
-                    data:
-                      option: Home
-
-          - conditions:
-              - condition: trigger
-                id: left
-            sequence:
-              - action: input_select.select_option
-                target:
-                  entity_id: input_select.presence_state_suellen
-                data:
-                  option: Just Left
-              - delay:
-                  minutes: 10
-              - if:
-                  - condition: state
-                    entity_id: person.suellen
-                    state: not_home
-                then:
-                  - action: input_select.select_option
-                    target:
-                      entity_id: input_select.presence_state_suellen
-                    data:
-                      option: Away
-
-          - conditions:
-              - condition: trigger
-                id: extended_away
-            sequence:
-              - action: input_select.select_option
-                target:
-                  entity_id: input_select.presence_state_suellen
-                data:
-                  option: Extended Away
+        default:
+          # settle + reconcile
+          - action: script.presence_reconcile
