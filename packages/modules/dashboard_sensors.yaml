@@ -1,0 +1,130 @@
+template:
+  - sensor:
+      - name: Lights On
+        unique_id: lights_on
+        icon: mdi:lightbulb-group
+        state: >-
+          {{ ['ground_floor', 'upper_floor', 'outside'] | map('floor_areas') | sum(start=[]) | map('area_entities')
+             | sum(start=[]) | select('match', '^light\\.') | select('is_state', 'on') | list | count }}
+
+      - name: ACs On
+        unique_id: acs_on
+        icon: mdi:air-conditioner
+        state: >-
+          {{ states.climate | rejectattr('state', 'in', ['off', 'unavailable', 'unknown']) | list | count }}
+
+      # Rooms: the name is the HA area name (single source of truth); the state is a short room summary.
+      - name: "{{ area_name('climate.living_room_ac') }}"
+        unique_id: living_room_room
+        default_entity_id: sensor.living_room_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ state_attr('climate.living_room_ac', 'current_temperature') }}"
+        availability: "{{ is_number(state_attr('climate.living_room_ac', 'current_temperature')) }}"
+      - name: "{{ area_name('climate.office_ac') }}"
+        unique_id: office_room
+        default_entity_id: sensor.office_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.office_office_air_conditioner_temperature') }}"
+        availability: "{{ is_number(states('sensor.office_office_air_conditioner_temperature')) }}"
+      - name: "{{ area_name('climate.main_bedroom_ac') }}"
+        unique_id: main_bedroom_room
+        default_entity_id: sensor.main_bedroom_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.main_bedroom_main_bedroom_ac_temperature') }}"
+        availability: "{{ is_number(states('sensor.main_bedroom_main_bedroom_ac_temperature')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_1_ac') }}"
+        unique_id: kids_bedroom_1_room
+        default_entity_id: sensor.kids_bedroom_1_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.kids_bedroom_1_ac_temperature') }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_1_ac_temperature')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_2_ac') }}"
+        unique_id: kids_bedroom_2_room
+        default_entity_id: sensor.kids_bedroom_2_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.kids_bedroom_2_ac_temperature') }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_2_ac_temperature')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_3_ac') }}"
+        unique_id: kids_bedroom_3_room
+        default_entity_id: sensor.kids_bedroom_3_room
+        icon: mdi:home-thermometer
+        device_class: temperature
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.kids_bedroom_3_ac_temperature') }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_3_ac_temperature')) }}"
+      - name: "{{ area_name('light.garage_light') }}"
+        unique_id: garage_room
+        default_entity_id: sensor.garage_room
+        icon: mdi:garage
+        state: >-
+          {% set n = ['light.garage_light', 'light.garage_front_light'] | select('is_state', 'on') | list | count %}
+          {{ 'Luzes apagadas' if n == 0 else '1 luz acesa' if n == 1 else n ~ ' luzes acesas' }}
+      - name: "{{ area_name('sensor.washer_current_status') }}"
+        unique_id: laundry_room
+        default_entity_id: sensor.laundry_room
+        icon: mdi:washing-machine
+        state: >-
+          {% set label = {'power_off': 'desligada', 'end': 'concluída', 'unknown': '--', 'unavailable': '--'} %}
+          Lavadora {{ label.get(states('sensor.washer_current_status'), 'em uso') }} ·
+          Secadora {{ label.get(states('sensor.dryer_current_status'), 'em uso') }}
+
+  # Family agenda: events overlapping today (state) and the next 7 days (attribute `upcoming`).
+  # The window starts at midnight so events that already ended today still count.
+  - triggers:
+      - trigger: time_pattern
+        minutes: /15
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    actions:
+      - action: calendar.get_events
+        continue_on_error: true
+        target:
+          entity_id: calendar.familia
+        data:
+          start_date_time: "{{ today_at().isoformat() }}"
+          end_date_time: "{{ (today_at() + timedelta(days=7)).isoformat() }}"
+        response_variable: agenda
+    sensor:
+      - name: Events Today
+        unique_id: events_today
+        icon: mdi:calendar-today
+        availability: "{{ agenda is defined and 'calendar.familia' in agenda }}"
+        state: >-
+          {% set events = agenda['calendar.familia'].events %}
+          {% set today = now().date() | string %}
+          {% set tomorrow = today_at() + timedelta(days=1) %}
+          {% set ns = namespace(count=0) %}
+          {% for e in events %}
+            {% if 'T' in e.start %}
+              {% if as_datetime(e.start) < tomorrow and as_datetime(e.end) > today_at() %}
+                {% set ns.count = ns.count + 1 %}
+              {% endif %}
+            {% elif e.start <= today and e.end > today %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.count }}
+        attributes:
+          upcoming: >-
+            {% set today = now().date() | string %}
+            {% set ns = namespace(items=[]) %}
+            {% for e in agenda['calendar.familia'].events | sort(attribute='start') %}
+              {% set all_day = 'T' not in e.start %}
+              {% set pending = e.end > today if all_day else as_datetime(e.end) > now() %}
+              {% if pending %}
+                {% set ns.items = ns.items + [{'summary': e.summary, 'start': e.start, 'end': e.end, 'all_day': all_day}] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.items[:10] }}

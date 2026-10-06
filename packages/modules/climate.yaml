@@ -1,4 +1,28 @@
 script:
+  ac_turn_on:
+    alias: Turn On AC
+    description: Turns an air conditioner on in cool mode at 23°
+    icon: mdi:snowflake
+    mode: parallel
+    fields:
+      entity_id:
+        description: Air conditioner to turn on
+        required: true
+        selector:
+          entity:
+            domain: climate
+    sequence:
+      - action: climate.set_hvac_mode
+        target:
+          entity_id: "{{ entity_id }}"
+        data:
+          hvac_mode: cool
+      - action: climate.set_temperature
+        target:
+          entity_id: "{{ entity_id }}"
+        data:
+          temperature: 23
+
   turn_off_all_acs:
     alias: Turn Off All Air Conditioners
     description: Turns off all 6 air conditioners in the house
