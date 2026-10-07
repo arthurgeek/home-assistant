@@ -1,2 +1,4 @@
 .env
+.direnv
 secrets.yaml
+__pycache__/

@@ -51,3 +51,4 @@ Integrations:
 ## Setup
 
 - `secrets.yaml` is git-ignored: copy `secrets.yaml.example` and fill it in. It holds `external_url`, `ha_diagnostics_token`, `internal_url`.
+- `nix develop` (or direnv) installs the git hooks: yamlfmt, nixfmt and gitleaks run before each commit.

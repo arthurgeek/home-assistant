@@ -1,0 +1,21 @@
+# Git hooks, installed by the flake dev shell. Skip one run with LEFTHOOK=0.
+
+[pre-commit]
+parallel = true
+
+# Whole-repo check: yamlfmt's own config (.yamlfmt) decides which files it owns.
+[pre-commit.commands.yamlfmt]
+glob = "*.{yaml,yml}"
+run = "yamlfmt -lint ."
+
+[pre-commit.commands.nixfmt]
+glob = "*.nix"
+run = "nixfmt --check {staged_files}"
+
+# Tokens, keys and credentials in staged changes.
+[pre-commit.commands.gitleaks]
+run = "gitleaks git --pre-commit --staged --redact --no-banner"
+
+# Conventional subject: type(scope): subject
+[commit-msg.commands.subject]
+run = "head -1 {1} | grep -qE '^(feat|fix|refactor|chore|docs|style|test|perf)(\\([a-z0-9_-]+\\))?!?: .+' || { echo 'subject must be type(scope): subject'; exit 1; }"
