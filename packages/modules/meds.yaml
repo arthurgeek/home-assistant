@@ -1,0 +1,208 @@
+# Meds reminder for Arthur: doses at 09:00 and 21:00. Dose and reminder rules live in custom_templates/meds.jinja.
+# All reminder state is in helpers, so a restart mid-reminder picks up where it left off.
+
+input_datetime:
+  meds_taken:
+    name: Meds · Last Taken
+    has_date: true
+    has_time: true
+  meds_next_reminder:
+    name: Meds · Next Reminder
+    has_date: true
+    has_time: true
+  meds_give_up:
+    name: Meds · Give Up At
+    has_date: true
+    has_time: true
+
+counter:
+  meds_ignored:
+    name: Meds · Reminders Ignored In A Row
+    restore: true
+
+template:
+  # Dose log for the habit heatmap: {day: {morning/evening: "HH:MM"}}, last 120 days. Trigger-based, so HA
+  # restores it across restarts and it doesn't depend on the recorder's 10-day history.
+  - triggers:
+      - trigger: state
+        entity_id: input_datetime.meds_taken
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: Meds Log
+        unique_id: meds_log
+        default_entity_id: sensor.meds_log
+        icon: mdi:calendar-check
+        state: "{{ states('input_datetime.meds_taken') }}"
+        attributes:
+          days: >-
+            {% from 'meds.jinja' import meds_slot %}
+            {% set days = state_attr('sensor.meds_log', 'days') or {} %}
+            {% set ts = state_attr('input_datetime.meds_taken', 'timestamp') %}
+            {% if ts %}
+              {% set t = as_local(as_datetime(ts)) %}
+              {% set slot = meds_slot(t) | from_json %}
+              {% set day = dict(days.get(slot.day, {}), **{slot.dose: t.strftime('%H:%M')}) %}
+              {% set days = dict(days, **{slot.day: day}) %}
+            {% endif %}
+            {% set cutoff = (now() - timedelta(days=120)).strftime('%Y-%m-%d') %}
+            {{ dict(days | dictsort | selectattr(0, '>=', cutoff) | list) }}
+  - sensor:
+      - name: Meds
+        unique_id: meds
+        default_entity_id: sensor.meds
+        icon: mdi:pill
+        # Each template calls the macro itself: they use now(), so HA re-renders them every minute
+        # (a `variables` block is rendered once and would freeze the dose).
+        state: "{% from 'meds.jinja' import meds_current %}{{ (meds_current() | from_json).status }}"
+        attributes:
+          dose: "{% from 'meds.jinja' import meds_current %}{{ (meds_current() | from_json).dose }}"
+          due: "{% from 'meds.jinja' import meds_current %}{{ (meds_current() | from_json).due }}"
+          taken_at: "{% from 'meds.jinja' import meds_current %}{{ (meds_current() | from_json).taken_at }}"
+
+script:
+  meds_taken:
+    alias: Meds · Taken
+    description: Marks the current dose as taken and clears its reminder
+    icon: mdi:pill
+    mode: single
+    sequence:
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.meds_taken
+        data:
+          timestamp: "{{ now().timestamp() }}"
+      - action: counter.reset
+        target:
+          entity_id: counter.meds_ignored
+      - action: notify.mobile_app_arthurs_phone
+        continue_on_error: true
+        data:
+          message: clear_notification
+          data:
+            tag: meds
+
+automation:
+  - id: meds_reminder
+    alias: Meds · Reminder
+    description: >-
+      At each dose time, reminds Arthur every 15 minutes until taken; gives up after 2h. Snooze waits an hour and
+      pushes the give-up out by an hour. After 4 reminders ignored in a row, also speaks in the living room if home.
+    mode: queued
+    triggers:
+      - trigger: time
+        at: "09:00:00"
+        id: due
+      - trigger: time
+        at: "21:00:00"
+        id: due
+      - trigger: time
+        at: input_datetime.meds_next_reminder
+        id: remind
+      - trigger: homeassistant
+        event: start
+        id: remind
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: MEDS_TAKEN
+        id: taken
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: MEDS_SNOOZE
+        id: snooze
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: taken
+            sequence:
+              - action: script.meds_taken
+          - conditions:
+              - condition: trigger
+                id: snooze
+            sequence:
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.meds_next_reminder
+                data:
+                  timestamp: "{{ (now() + timedelta(hours=1)).timestamp() }}"
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.meds_give_up
+                data:
+                  timestamp: "{{ state_attr('input_datetime.meds_give_up', 'timestamp') + 3600 }}"
+              - action: counter.reset
+                target:
+                  entity_id: counter.meds_ignored
+        default:
+          - variables:
+              dose: "{% from 'meds.jinja' import meds_current %}{{ meds_current() | from_json }}"
+          - condition: template
+            value_template: "{{ dose.status == 'pending' }}"
+          # On start, only catch up a reminder that came due while HA was down
+          - condition: template
+            value_template: >-
+              {{ trigger.id != 'remind' or trigger.platform != 'homeassistant'
+                 or (state_attr('input_datetime.meds_next_reminder', 'timestamp') or 0) <= now().timestamp() }}
+          - if:
+              - condition: trigger
+                id: due
+            then:
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.meds_give_up
+                data:
+                  timestamp: "{{ (now() + timedelta(hours=2)).timestamp() }}"
+              - action: counter.reset
+                target:
+                  entity_id: counter.meds_ignored
+          - variables:
+              label: "{{ 'da manhã' if dose.dose == 'morning' else 'da noite' }}"
+              step: >-
+                {% from 'meds.jinja' import meds_step %}
+                {{ meds_step(now(), as_local(as_datetime(state_attr('input_datetime.meds_give_up', 'timestamp'))),
+                             states('counter.meds_ignored') | int(0), is_state('person.arthur', 'home')) }}
+          - if:
+              - condition: template
+                value_template: "{{ step == 'give_up' }}"
+            then:
+              - action: script.notify_person
+                data:
+                  person: person.arthur
+                  title: "💊 Remédio {{ label }} não tomado"
+                  message: "Parei de lembrar. Se tomou, marque no painel."
+                  tag: meds
+                  importance: low
+                  notification_icon: mdi:pill-off
+            else:
+              - action: script.notify_person
+                data:
+                  person: person.arthur
+                  title: "💊 Remédio {{ label }}"
+                  message: "Hora do remédio {{ label }}."
+                  tag: meds
+                  importance: high
+                  notification_icon: mdi:pill
+                  actions:
+                    - action: MEDS_TAKEN
+                      title: Tomei
+                    - action: MEDS_SNOOZE
+                      title: Daqui a 1h
+              - if:
+                  - condition: template
+                    value_template: "{{ step == 'announce' }}"
+                then:
+                  - action: script.announce
+                    data:
+                      media_player: media_player.living_room_ma
+                      message: "Arthur, hora do remédio {{ label }}."
+              - action: counter.increment
+                target:
+                  entity_id: counter.meds_ignored
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.meds_next_reminder
+                data:
+                  timestamp: "{{ (now() + timedelta(minutes=15)).timestamp() }}"

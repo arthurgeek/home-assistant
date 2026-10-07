@@ -1,0 +1,35 @@
+{#- Meds: one dose at 09:00, one at 21:00. A dose counts as taken from an hour before it's due (three, for the morning one). -#}
+
+{#- The dose that matters at `now`, as JSON: dose (morning/evening), due, status (upcoming/pending/taken). -#}
+{%- macro meds_dose(now, taken) -%}
+  {%- set midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) -%}
+  {%- if now.hour >= 20 -%}
+    {%- set dose, due = 'evening', midnight.replace(hour=21) -%}
+  {%- elif now.hour >= 6 -%}
+    {%- set dose, due = 'morning', midnight.replace(hour=9) -%}
+  {%- else -%}
+    {%- set dose, due = 'evening', (midnight - timedelta(days=1)).replace(hour=21) -%}
+  {%- endif -%}
+  {%- set early = 3 if dose == 'morning' else 1 -%}
+  {%- set status = 'taken' if taken and taken >= due - timedelta(hours=early)
+                   else 'pending' if now >= due else 'upcoming' -%}
+  {{- {'dose': dose, 'due': due.isoformat(), 'status': status,
+       'taken_at': taken.isoformat() if taken else none} | to_json -}}
+{%- endmacro -%}
+
+{#- Which day and dose a dose taken at `taken` counts for, as JSON: {day, dose}. -#}
+{%- macro meds_slot(taken) -%}
+  {%- set d = meds_dose(taken, none) | from_json -%}
+  {{- {'day': d.due[:10], 'dose': d.dose} | to_json -}}
+{%- endmacro -%}
+
+{#- The dose right now, from the clock and input_datetime.meds_taken. -#}
+{%- macro meds_current() -%}
+  {%- set ts = state_attr('input_datetime.meds_taken', 'timestamp') -%}
+  {{- meds_dose(now(), as_local(as_datetime(ts)) if ts else none) -}}
+{%- endmacro -%}
+
+{#- What a reminder does at `now`: give up past the deadline, speak up after 4 ignored in a row (if home), else notify. -#}
+{%- macro meds_step(now, give_up, ignored, home) -%}
+  {{- 'give_up' if now >= give_up else 'announce' if ignored >= 4 and home else 'notify' -}}
+{%- endmacro -%}

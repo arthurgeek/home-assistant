@@ -78,6 +78,9 @@ script:
       actions:
         description: Action buttons list
         default: []
+      tag:
+        description: Notification tag; a new one with the same tag replaces it, and it can be cleared by tag
+        default: ""
     sequence:
       - variables:
           target_person: "{{ person if person.startswith('person.') else 'person.' ~ person }}"
@@ -127,6 +130,9 @@ script:
             {% endif %}
             {% if actions is defined and actions and actions != [] %}
               {% set p = dict(p, actions=actions) %}
+            {% endif %}
+            {% if tag is defined and tag %}
+              {% set p = dict(p, tag=tag) %}
             {% endif %}
             {{ p }}
       - if:
