@@ -1,0 +1,117 @@
+# Samsung Good Sleep sync. SmartThings reports Good Sleep's duration (tropical-night level, in half hours) but HA's
+# SmartThings integration doesn't expose it, so it is read from HA's own diagnostics of the AC. Nothing here lists the
+# ACs: they are the ones with the samsung label. While one is on, an automation reads each one's level every five
+# minutes (the only way to see a change made from the remote or the app) and fires an event with it; the scripts that
+# set a level fire the same event, so what HA sets is exact. One template sensor keeps the levels and works out when
+# each AC's Good Sleep ends, whoever started it (HA, remote or app).
+rest_command:
+  ac_diagnostics:
+    url: "http://localhost:8123/api/diagnostics/config_entry/{{ entry }}/device/{{ device }}"
+    method: get
+    headers:
+      Authorization: !secret ha_diagnostics_token
+    timeout: 30
+
+automation:
+  - id: ac_good_sleep_poll
+    alias: AC · Poll Good Sleep Level
+    description: >-
+      While a Samsung AC is on, reads the Good Sleep level of each one that is on, every five minutes, and fires it as
+      an event. It starts when an AC turns on, when Home Assistant starts and after automations reload, so nothing
+      runs while they are all off.
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: climate.turned_on
+        target:
+          label_id: samsung
+        options:
+          behavior: each
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: automation_reloaded
+    actions:
+      # right after a start or a reload the ACs may still be loading
+      - wait_template: "{{ label_entities('samsung') | reject('is_state', 'unavailable') | list | count > 0 }}"
+        timeout: "00:05:00"
+        continue_on_timeout: true
+      - repeat:
+          while:
+            - condition: template
+              value_template: "{{ label_entities('samsung') | reject('is_state', ['off', 'unavailable', 'unknown']) | list | count > 0 }}"
+          sequence:
+            - repeat:
+                for_each: "{{ label_entities('samsung') | reject('is_state', ['off', 'unavailable', 'unknown']) | list }}"
+                sequence:
+                  - action: rest_command.ac_diagnostics
+                    continue_on_error: true
+                    data:
+                      entry: "{{ config_entry_id(repeat.item) }}"
+                      device: "{{ device_id(repeat.item) }}"
+                    response_variable: diagnostics
+                  - event: ac_good_sleep_level
+                    event_data:
+                      climate: "{{ repeat.item }}"
+                      level: >-
+                        {{ diagnostics.content.data.status.components.main['custom.airConditionerTropicalNightMode']
+                           .acTropicalNightModeLevel.value | int(0) }}
+            - delay: "00:05:00"
+
+template:
+  - triggers:
+      - trigger: state
+        entity_id:
+          - climate.main_bedroom_ac
+          - climate.office_ac
+          - climate.kids_bedroom_1_ac
+          - climate.kids_bedroom_2_ac
+          - climate.kids_bedroom_3_ac
+          - sensor.main_bedroom_ac_good_sleep_level
+          - sensor.office_ac_good_sleep_level
+          - sensor.kids_bedroom_1_ac_good_sleep_level
+          - sensor.kids_bedroom_2_ac_good_sleep_level
+          - sensor.kids_bedroom_3_ac_good_sleep_level
+      - trigger: time_pattern
+        minutes: /1
+    variables:
+      acs: "{{ label_entities('samsung') }}"
+      # ACs that are on and in a Good Sleep mode
+      sleeping: >-
+        {{ ((acs | select('is_state_attr', 'preset_mode', 'sleep') | list)
+            + (acs | select('is_state_attr', 'preset_mode', 'wind_free_sleep') | list))
+           | reject('is_state', 'off') | list }}
+      starts: >-
+        {% from 'good_sleep.jinja' import good_sleep_started %}
+        {% set previous = state_attr('sensor.ac_good_sleep_ends', 'starts') or {} %}
+        {% set before = trigger.from_state if trigger.platform == 'state' else none %}
+        {% set ns = namespace(items=[]) %}
+        {% for climate in sleeping %}
+          {% set level_sensor = climate | replace('climate.', 'sensor.') ~ '_good_sleep_level' %}
+          {# HA restarts and reloads don't restart the timer: the start comes back from the restored attribute #}
+          {% set restarted = trigger.platform == 'state' and trigger.entity_id in [climate, level_sensor]
+                              and good_sleep_started('level' if trigger.entity_id == level_sensor else 'climate',
+                                                     before.state if before else '',
+                                                     (before.attributes.preset_mode or '') if before else '',
+                                                     state_attr(climate, 'preset_mode') or '') == 'True' %}
+          {% set ns.items = ns.items + [(climate, now().isoformat() if restarted or climate not in previous else previous[climate])] %}
+        {% endfor %}
+        {{ dict(ns.items) }}
+      ends: >-
+        {% set ns = namespace(items=[]) %}
+        {% for climate, start in starts.items() %}
+          {% set level = states(climate | replace('climate.', 'sensor.') ~ '_good_sleep_level') | int(0) %}
+          {% if level > 0 %}
+            {% set end = as_datetime(start) + timedelta(minutes=30 * level) %}
+            {% if end > now() %}{% set ns.items = ns.items + [(climate, end.isoformat())] %}{% endif %}
+          {% endif %}
+        {% endfor %}
+        {{ dict(ns.items) }}
+    sensor:
+      - name: AC Good Sleep Ends
+        unique_id: ac_good_sleep_ends
+        icon: mdi:timer-outline
+        state: "{{ ends | count }}"
+        attributes:
+          starts: "{{ starts }}"
+          ends: "{{ ends }}"

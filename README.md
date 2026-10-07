@@ -14,6 +14,7 @@ The interface is in Brazilian Portuguese; everything else is in English.
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
 | `dashboards/` | The Casa dashboard: views, cards, pop-ups and card templates |
+| `custom_templates/` | Shared Jinja macros |
 | `themes/` | The Catppuccin theme |
 
 `automations.yaml`, `scripts.yaml` and `scenes.yaml` are the files the UI writes to; the logic is in `packages/`.
@@ -40,4 +41,4 @@ Integrations:
 
 ## Setup
 
-- `secrets.yaml` is git-ignored: copy `secrets.yaml.example` and fill it in. It holds `external_url`, `internal_url`.
+- `secrets.yaml` is git-ignored: copy `secrets.yaml.example` and fill it in. It holds `external_url`, `ha_diagnostics_token`, `internal_url`.

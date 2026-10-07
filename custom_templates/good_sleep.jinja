@@ -1,0 +1,11 @@
+{#- Samsung Good Sleep sessions, for the countdown on the AC cards. -#}
+
+{#- Whether a state change starts a new session (its timer restarts from now): `changed` is 'level' (the Good Sleep
+    duration sensor) or 'climate'; `before` is the previous state. A change from unavailable/unknown or from no state
+    is HA or the integration (re)loading, not a new session. Returns 'True'/'False'. -#}
+{%- macro good_sleep_started(changed, before, preset_before, preset_now) -%}
+  {%- if before in ['', 'unavailable', 'unknown', 'None'] -%}False
+  {%- elif changed == 'level' -%}True
+  {%- else -%}{{ before == 'off' or preset_before != preset_now }}
+  {%- endif -%}
+{%- endmacro -%}

@@ -23,6 +23,75 @@ script:
         data:
           temperature: 23
 
+  ac_good_sleep:
+    alias: AC Good Sleep
+    description: >-
+      Cools (23° if it was off) in WindFree Sleep with Samsung's Good Sleep for the given hours, after which the AC
+      switches itself off. Good Sleep's duration is the tropical-night level, in half hours. LG: native sleep timer.
+    icon: mdi:weather-night
+    mode: parallel
+    fields:
+      entity_id:
+        description: Air conditioner
+        required: true
+        selector:
+          entity:
+            domain: climate
+      hours:
+        description: Hours until the AC switches itself off
+        default: 1
+        selector:
+          number:
+            min: 1
+            max: 12
+            step: 1
+    sequence:
+      - variables:
+          was_off: "{{ is_state(entity_id, 'off') }}"
+          samsung: "{{ 'wind_free_sleep' in (state_attr(entity_id, 'preset_modes') or []) }}"
+          hours: "{{ hours | default(1) | int(1) }}"
+      - action: climate.set_hvac_mode
+        target:
+          entity_id: "{{ entity_id }}"
+        data:
+          hvac_mode: cool
+      - if:
+          - condition: template
+            value_template: "{{ was_off }}"
+        then:
+          - action: climate.set_temperature
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              temperature: 23
+      - if:
+          - condition: template
+            value_template: "{{ samsung }}"
+        then:
+          - action: smartthing_extra.send_command
+            data:
+              device_id: "{{ device_id(entity_id) }}"
+              component: main
+              capability: CUSTOM_AIR_CONDITIONER_TROPICAL_NIGHT_MODE
+              command: SET_AC_TROPICAL_NIGHT_MODE_LEVEL
+              arguments:
+                - "{{ hours * 2 }}"
+          - event: ac_good_sleep_level
+            event_data:
+              climate: "{{ entity_id }}"
+              level: "{{ hours * 2 }}"
+          - action: climate.set_preset_mode
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              preset_mode: wind_free_sleep
+        else:
+          - action: number.set_value
+            target:
+              entity_id: number.living_room_ac_sleep_timer
+            data:
+              value: "{{ hours }}"
+
   turn_off_all_acs:
     alias: Turn Off All Air Conditioners
     description: Turns off all 6 air conditioners in the house
