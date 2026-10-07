@@ -1,0 +1,42 @@
+# One player per Sonos speaker that shows and controls whichever of its two HA players has the real
+# now-playing: Music Assistant's (music started from MA/HA) or Sonos native's (music started from the
+# Spotify app). Rule in custom_templates/speaker.jinja.
+media_player:
+  - platform: universal
+    name: Living Room Speaker
+    unique_id: living_room_speaker
+    children:
+      - media_player.living_room_ma
+      - media_player.living_room
+    active_child_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ speaker_child('media_player.living_room_ma', 'media_player.living_room') }}
+    # Its own state, not universal's (which reports "off" for idle children)
+    state_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ states(speaker_child('media_player.living_room_ma', 'media_player.living_room')) }}
+    browse_media_entity: media_player.living_room_ma
+
+  - platform: universal
+    name: Kids Bedroom Speaker
+    unique_id: kids_bedroom_speaker
+    children:
+      - media_player.kids_bedroom_ma
+      - media_player.kids_bedroom
+    active_child_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ speaker_child('media_player.kids_bedroom_ma', 'media_player.kids_bedroom') }}
+    # Its own state, not universal's (which reports "off" for idle children)
+    state_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ states(speaker_child('media_player.kids_bedroom_ma', 'media_player.kids_bedroom')) }}
+    browse_media_entity: media_player.kids_bedroom_ma
+
+  - platform: universal
+    name: Sonos Move Speaker
+    unique_id: sonos_move_speaker
+    children:
+      - media_player.sonos_move_ma
+      - media_player.sonos_move
+    active_child_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ speaker_child('media_player.sonos_move_ma', 'media_player.sonos_move') }}
+    # Its own state, not universal's (which reports "off" for idle children)
+    state_template: >-
+      {% from 'speaker.jinja' import speaker_child %}{{ states(speaker_child('media_player.sonos_move_ma', 'media_player.sonos_move')) }}
+    browse_media_entity: media_player.sonos_move_ma

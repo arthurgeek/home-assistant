@@ -1,0 +1,17 @@
+{#- Each Sonos speaker is two HA players: Music Assistant's and Sonos native. Music started from MA only has its
+    title on the MA player (Sonos sees MA's stream URL); music started from the Spotify app only has it on the
+    Sonos player (MA sees an external source without one). -#}
+
+{#- Which player to show and control: 'ma' or 'sonos'. -#}
+{%- macro speaker_source(ma_state, ma_title, sonos_state) -%}
+  {%- if ma_state == 'playing' and ma_title -%}ma
+  {%- elif sonos_state in ['playing', 'paused'] -%}sonos
+  {%- elif ma_state == 'paused' and ma_title -%}ma
+  {%- else -%}sonos
+  {%- endif -%}
+{%- endmacro -%}
+
+{#- The entity id of that player, from the live states. -#}
+{%- macro speaker_child(ma, sonos) -%}
+  {{- ma if speaker_source(states(ma), state_attr(ma, 'media_title') or '', states(sonos)) == 'ma' else sonos -}}
+{%- endmacro -%}
