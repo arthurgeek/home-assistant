@@ -1,0 +1,34 @@
+type: custom:streamline-card
+template: room_popup
+variables:
+  key: garage
+  icon: mdi:garage
+  cards:
+    - type: custom:bubble-card
+      card_type: separator
+      name: Iluminação
+      icon: mdi:lightbulb
+    - type: horizontal-stack
+      cards:
+        - type: custom:bubble-card
+          card_type: button
+          button_type: state
+          entity: light.garage_light
+          name: Luz da garagem
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+          button_action:
+            tap_action:
+              action: more-info
+        - type: custom:bubble-card
+          card_type: button
+          button_type: state
+          entity: light.garage_front_light
+          name: Luz da frente
+          icon: mdi:coach-lamp
+          tap_action:
+            action: toggle
+          button_action:
+            tap_action:
+              action: more-info

@@ -1,0 +1,5 @@
+type: custom:streamline-card
+template: ac_sleep_chooser
+variables:
+  key: main_bedroom
+  climate: climate.main_bedroom_ac

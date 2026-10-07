@@ -1,0 +1,9 @@
+type: custom:streamline-card
+template: ac_popup
+variables:
+  key: main_bedroom
+  climate: climate.main_bedroom_ac
+  icon: mdi:bed-king
+  display: switch.main_bedroom_main_bedroom_ac_display_lighting
+  humidity: sensor.main_bedroom_main_bedroom_ac_humidity
+  ac_card: !include ../../cards/ac/main_bedroom.yaml

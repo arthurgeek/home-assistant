@@ -1,0 +1,42 @@
+type: custom:streamline-card
+template: room_popup
+variables:
+  key: laundry
+  icon: mdi:washing-machine
+  cards:
+    - type: custom:bubble-card
+      card_type: separator
+      name: Lavadora
+      icon: mdi:washing-machine
+    - type: custom:bubble-card
+      card_type: button
+      entity: switch.washer_power
+      name: Lavadora
+      icon: mdi:washing-machine
+      sub_button:
+        - entity: sensor.washer_current_status
+          show_state: true
+          show_icon: false
+          show_background: false
+        - entity: sensor.washer_remaining_time
+          show_state: true
+          show_icon: false
+          show_background: false
+    - type: custom:bubble-card
+      card_type: separator
+      name: Secadora
+      icon: mdi:tumble-dryer
+    - type: custom:bubble-card
+      card_type: button
+      entity: switch.dryer_power
+      name: Secadora
+      icon: mdi:tumble-dryer
+      sub_button:
+        - entity: sensor.dryer_current_status
+          show_state: true
+          show_icon: false
+          show_background: false
+        - entity: sensor.dryer_remaining_time
+          show_state: true
+          show_icon: false
+          show_background: false

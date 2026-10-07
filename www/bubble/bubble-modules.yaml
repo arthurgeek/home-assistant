@@ -1,0 +1,9 @@
+# Bubble Card modules; "default" applies to every Bubble card.
+# Bubble scopes module rules away from the cards inside pop-ups, so card sizes live in each card's grid_options.
+default:
+  name: Default
+  description: Pop-ups end above the floating navbar
+  code: |-
+    .bubble-pop-up-container {
+      padding-bottom: calc(130px + env(safe-area-inset-bottom, 0px)) !important;
+    }

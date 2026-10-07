@@ -1,0 +1,167 @@
+# Card templates (streamline-card): each pop-up kind is defined once; pop-up files only pass variables.
+
+# AC detail pop-up. Variables: key (e.g. office), climate, icon, display (panel light switch),
+# ac_card (the AC card config), humidity (optional sensor), extra_card (optional, e.g. the LG's extras).
+ac_popup:
+  default:
+    - humidity: ""
+    - extra_card:
+        type: custom:button-card
+        template: nothing
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#ac_[[key]]"
+    entity: sensor.[[key]]_room
+    icon: "[[icon]]"
+    button_type: state
+    button_action:
+      tap_action:
+        action: none
+    bg_blur: 16
+    cards:
+      - "[[ac_card]]"
+      - type: custom:button-card
+        template: ac_options
+        variables:
+          climate: "[[climate]]"
+          attribute: hvac_mode
+      - type: custom:button-card
+        template: ac_options
+        variables:
+          climate: "[[climate]]"
+          attribute: preset_mode
+          popup_key: "[[key]]"
+      - type: custom:button-card
+        template: ac_sleep_extend
+        variables:
+          climate: "[[climate]]"
+      - type: custom:button-card
+        template: ac_options
+        variables:
+          climate: "[[climate]]"
+          attribute: fan_mode
+      - type: custom:button-card
+        template: ac_options
+        variables:
+          climate: "[[climate]]"
+          attribute: swing_mode
+      - type: custom:bubble-card
+        card_type: separator
+        name: Extras
+        icon: mdi:dots-horizontal-circle-outline
+      - type: custom:bubble-card
+        card_type: button
+        entity: "[[display]]"
+        name: Luz do painel
+        icon: mdi:led-on
+      - "[[extra_card]]"
+      - type: custom:streamline-card
+        template: history_graph
+        grid_options:
+          columns: full  # Bubble gives cards without a size hint half the pop-up, one row high
+          rows: auto
+        variables:
+          temperature: sensor.[[key]]_room
+          humidity: "[[humidity]]"
+
+# Good Sleep duration chooser, opened by the WindFree Sleep preset. Variables: key, climate.
+ac_sleep_chooser:
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#ac_[[key]]_sleep"
+    entity: sensor.[[key]]_room
+    icon: mdi:weather-night
+    button_type: state
+    button_action:
+      tap_action:
+        action: none
+    bg_blur: 16
+    cards:
+      - type: custom:bubble-card
+        card_type: separator
+        name: WindFree Sono · desligar em
+        icon: mdi:timer-outline
+      - type: custom:paper-buttons-row
+        styles:
+          justify-content: center
+          gap: 10px
+        base_config:
+          layout: name
+          ripple: none
+          styles:
+            button:
+              padding: 12px 22px
+              border-radius: 20px
+              background: "var(--catppuccin-mauve, #c6a0f6)"
+            name:
+              color: "var(--catppuccin-base, #24273a)"
+              font-size: 16px
+              font-weight: 600
+        buttons:
+          - name: 1h
+            tap_action:
+              action: call-service
+              service: script.ac_good_sleep
+              service_data:
+                entity_id: "[[climate]]"
+                hours: 1
+          - name: 2h
+            tap_action:
+              action: call-service
+              service: script.ac_good_sleep
+              service_data:
+                entity_id: "[[climate]]"
+                hours: 2
+          - name: 4h
+            tap_action:
+              action: call-service
+              service: script.ac_good_sleep
+              service_data:
+                entity_id: "[[climate]]"
+                hours: 4
+          - name: 8h
+            tap_action:
+              action: call-service
+              service: script.ac_good_sleep
+              service_data:
+                entity_id: "[[climate]]"
+                hours: 8
+
+# Room pop-up: header is the room sensor (HA area name + summary). Variables: key, icon, cards.
+room_popup:
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#[[key]]"
+    entity: sensor.[[key]]_room
+    icon: "[[icon]]"
+    button_type: state
+    button_action:
+      tap_action:
+        action: none
+    bg_blur: 16
+    cards: "[[cards]]"
+
+# 24h temperature (+ optional humidity) graph. Variables: temperature, humidity (optional).
+history_graph:
+  default:
+    - humidity: ""
+  card:
+    type: custom:mini-graph-card
+    name: Últimas 24h
+    hours_to_show: 24
+    points_per_hour: 2
+    line_width: 2
+    height: 120
+    entities_javascript: |
+      const entities = [{ entity: '[[temperature]]', name: 'Temperatura', color: '#f5a97f' }];
+      if ('[[humidity]]') entities.push({ entity: '[[humidity]]', name: 'Umidade', color: '#8aadf4', y_axis: 'secondary' });
+      return entities;
+    show:
+      labels: true
+      labels_secondary: true
+    card_mod:
+      style: |-
+        ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); }

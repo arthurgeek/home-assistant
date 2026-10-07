@@ -16,6 +16,7 @@ The interface is in Brazilian Portuguese; everything else is in English.
 | `dashboards/` | The Casa dashboard: views, cards, pop-ups and card templates |
 | `custom_templates/` | Shared Jinja macros |
 | `themes/` | The Catppuccin theme |
+| `www/` | Bubble Card modules |
 
 `automations.yaml`, `scripts.yaml` and `scenes.yaml` are the files the UI writes to; the logic is in `packages/`.
 
@@ -26,12 +27,20 @@ Installed from [HACS](https://hacs.xyz) on the instance, not included here.
 Dashboard cards and theme:
 [Bubble Card](https://github.com/Clooos/Bubble-Card),
 [button-card](https://github.com/custom-cards/button-card),
+[streamline-card](https://github.com/brunosabot/streamline-card),
 [layout-card](https://github.com/thomasloven/lovelace-layout-card),
 [card-mod](https://github.com/thomasloven/lovelace-card-mod),
+[Paper Buttons Row](https://github.com/jcwillox/lovelace-paper-buttons-row),
+[Advanced Camera Card](https://github.com/dermotduffy/advanced-camera-card),
 [Sonos Card](https://github.com/punxaphil/custom-sonos-card),
 [Mini Media Player](https://github.com/kalkih/mini-media-player),
 [mini-graph-card](https://github.com/kalkih/mini-graph-card),
 [Weather Forecast Card](https://github.com/troinine/ha-weather-forecast-card),
+[Simple Tabs](https://github.com/agoberg85/home-assistant-simple-tabs),
+[Todo List Card](https://github.com/agoberg85/home-assistant-todo-card),
+[MySmart Floating Navbar](https://github.com/agoberg85/mysmart-floating-navbar),
+[CSS-Swipe-Card](https://github.com/Nemuritor01/css-swipe-card),
+[Kiosk Mode](https://github.com/NemesisRE/kiosk-mode),
 [Catppuccin theme](https://github.com/catppuccin/home-assistant).
 
 Integrations:

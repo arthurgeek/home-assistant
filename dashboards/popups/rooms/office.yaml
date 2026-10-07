@@ -1,52 +1,44 @@
-type: custom:bubble-card
-card_type: pop-up
-hash: '#office'
-name: Escritório
-icon: mdi:desk
-bg_blur: 16
-cards:
-  - type: custom:bubble-card
-    card_type: separator
-    name: Iluminação
-    icon: mdi:lightbulb
-
-  - type: custom:bubble-card
-    card_type: button
-    entity: light.office_light
-    name: Luz do Escritório
-    icon: mdi:desk-lamp
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Climatização
-    icon: mdi:air-conditioner
-
-  - type: custom:bubble-card
-    card_type: climate
-    entity: climate.office_ac
-    name: AC Escritório
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Histórico de Temperatura
-    icon: mdi:chart-timeline-variant
-
-  - type: custom:mini-graph-card
-    entities:
-      - entity: sensor.office_office_air_conditioner_temperature
-        name: Temperatura
-      - entity: sensor.office_office_air_conditioner_humidity
-        name: Umidade
-        y_axis: secondary
-    hours_to_show: 24
-    line_width: 3
-    points_per_hour: 2
-    animate: true
-    card_mod:
-      style: |-
-        ha-card {
-          background: rgba(36, 39, 58, 0.6);
-          border-radius: 20px;
-          border: 1px solid rgba(202, 211, 245, 0.08);
-          padding: 12px;
-        }
+type: custom:streamline-card
+template: room_popup
+variables:
+  key: office
+  icon: mdi:desk
+  cards:
+    - type: custom:bubble-card
+      card_type: separator
+      name: Presença
+      icon: mdi:motion-sensor
+    - type: custom:bubble-card
+      card_type: button
+      button_type: state
+      entity: binary_sensor.office_presence
+      name: Presença no escritório
+      icon: mdi:motion-sensor
+    - type: custom:bubble-card
+      card_type: separator
+      name: Iluminação
+      icon: mdi:lightbulb
+    - type: custom:bubble-card
+      card_type: button
+      button_type: state
+      entity: light.office_light
+      name: Luz do escritório
+      icon: mdi:desk-lamp
+      tap_action:
+        action: toggle
+      button_action:
+        tap_action:
+          action: more-info
+    - type: custom:bubble-card
+      card_type: separator
+      name: Climatização
+      icon: mdi:air-conditioner
+    - !include ../../cards/ac/office.yaml
+    - type: custom:streamline-card
+      template: history_graph
+      grid_options:
+        columns: full  # Bubble gives cards without a size hint half the pop-up, one row high
+        rows: auto
+      variables:
+        temperature: sensor.office_room
+        humidity: sensor.office_office_air_conditioner_humidity

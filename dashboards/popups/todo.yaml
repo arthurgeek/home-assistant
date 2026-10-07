@@ -1,0 +1,70 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#todo'
+name: Tarefas
+icon: mdi:checkbox-marked-outline
+bg_blur: 16
+cards:
+  - type: custom:simple-tabs
+    tabs_alignment: center
+    card_padding: "0"
+    button_background: transparent
+    button_border_color: "var(--catppuccin-surface1, #494d64)"
+    button_text_color: "var(--catppuccin-subtext0, #a5adcb)"
+    button_active_background: "var(--catppuccin-mauve, #c6a0f6)"
+    button_active_text_color: "var(--catppuccin-base, #24273a)"
+    tabs:
+      - title: Projetos
+        icon: mdi:hammer-wrench
+        card:
+          type: custom:todo-list-card
+          entity: todo.house_projects
+          text_color: "var(--catppuccin-text, #cad3f5)"
+          completed_text_color: "var(--catppuccin-overlay1, #8087a2)"
+          card_background: "transparent"
+          card_color: "rgba(73, 77, 100, 0.45)"
+          completed_color: "rgba(73, 77, 100, 0.25)"
+          icon_background: "rgba(73, 77, 100, 0.8)"
+          mode: tasks
+          sort_by: priority
+          language: auto
+          show_priority: true
+          quick_add: true
+          show_search_button: true
+          show_filter_menu: true
+      - title: Rápidas
+        icon: mdi:lightning-bolt
+        card:
+          type: custom:todo-list-card
+          entity: todo.quick_tasks
+          text_color: "var(--catppuccin-text, #cad3f5)"
+          completed_text_color: "var(--catppuccin-overlay1, #8087a2)"
+          card_background: "transparent"
+          card_color: "rgba(73, 77, 100, 0.45)"
+          completed_color: "rgba(73, 77, 100, 0.25)"
+          icon_background: "rgba(73, 77, 100, 0.8)"
+          mode: tasks
+          sort_by: priority
+          language: auto
+          show_priority: true
+          quick_add: true
+          show_search_button: true
+          show_filter_menu: true
+      - title: Pessoal
+        icon: mdi:account
+        card:
+          type: custom:todo-list-card
+          entity: todo.personal
+          text_color: "var(--catppuccin-text, #cad3f5)"
+          completed_text_color: "var(--catppuccin-overlay1, #8087a2)"
+          card_background: "transparent"
+          card_color: "rgba(73, 77, 100, 0.45)"
+          completed_color: "rgba(73, 77, 100, 0.25)"
+          icon_background: "rgba(73, 77, 100, 0.8)"
+          mode: tasks
+          sort_by: priority
+          language: auto
+          show_priority: true
+          quick_add: true
+          show_search_button: true
+          show_filter_menu: true

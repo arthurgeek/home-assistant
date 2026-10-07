@@ -60,20 +60,12 @@ automation:
 
 template:
   - triggers:
-      - trigger: state
-        entity_id:
-          - climate.main_bedroom_ac
-          - climate.office_ac
-          - climate.kids_bedroom_1_ac
-          - climate.kids_bedroom_2_ac
-          - climate.kids_bedroom_3_ac
-          - sensor.main_bedroom_ac_good_sleep_level
-          - sensor.office_ac_good_sleep_level
-          - sensor.kids_bedroom_1_ac_good_sleep_level
-          - sensor.kids_bedroom_2_ac_good_sleep_level
-          - sensor.kids_bedroom_3_ac_good_sleep_level
+      - trigger: event
+        event_type: ac_good_sleep_level
       - trigger: time_pattern
         minutes: /1
+      - trigger: event
+        event_type: event_template_reloaded
     variables:
       acs: "{{ label_entities('samsung') }}"
       # ACs that are on and in a Good Sleep mode
@@ -81,26 +73,29 @@ template:
         {{ ((acs | select('is_state_attr', 'preset_mode', 'sleep') | list)
             + (acs | select('is_state_attr', 'preset_mode', 'wind_free_sleep') | list))
            | reject('is_state', 'off') | list }}
+      # the last level read or set for each AC, kept from run to run (restored across restarts)
+      previous_levels: "{{ state_attr('sensor.ac_good_sleep_ends', 'levels') or {} }}"
+      levels: >-
+        {% if trigger.platform == 'event' and trigger.event.event_type == 'ac_good_sleep_level' %}
+          {{ dict(previous_levels.items() | list + [(trigger.event.data.climate, trigger.event.data.level | int(0))]) }}
+        {% else %}
+          {{ previous_levels }}
+        {% endif %}
       starts: >-
-        {% from 'good_sleep.jinja' import good_sleep_started %}
         {% set previous = state_attr('sensor.ac_good_sleep_ends', 'starts') or {} %}
-        {% set before = trigger.from_state if trigger.platform == 'state' else none %}
         {% set ns = namespace(items=[]) %}
         {% for climate in sleeping %}
-          {% set level_sensor = climate | replace('climate.', 'sensor.') ~ '_good_sleep_level' %}
-          {# HA restarts and reloads don't restart the timer: the start comes back from the restored attribute #}
-          {% set restarted = trigger.platform == 'state' and trigger.entity_id in [climate, level_sensor]
-                              and good_sleep_started('level' if trigger.entity_id == level_sensor else 'climate',
-                                                     before.state if before else '',
-                                                     (before.attributes.preset_mode or '') if before else '',
-                                                     state_attr(climate, 'preset_mode') or '') == 'True' %}
-          {% set ns.items = ns.items + [(climate, now().isoformat() if restarted or climate not in previous else previous[climate])] %}
+          {# a new session starts the timer; so does a different duration (the AC restarts it from now) #}
+          {% set before = previous_levels.get(climate, 0) | int(0) %}
+          {% set now_level = levels.get(climate, 0) | int(0) %}
+          {% set changed = before > 0 and now_level > 0 and now_level != before %}
+          {% set ns.items = ns.items + [(climate, now().isoformat() if changed or climate not in previous else previous[climate])] %}
         {% endfor %}
         {{ dict(ns.items) }}
       ends: >-
         {% set ns = namespace(items=[]) %}
         {% for climate, start in starts.items() %}
-          {% set level = states(climate | replace('climate.', 'sensor.') ~ '_good_sleep_level') | int(0) %}
+          {% set level = levels.get(climate, 0) | int(0) %}
           {% if level > 0 %}
             {% set end = as_datetime(start) + timedelta(minutes=30 * level) %}
             {% if end > now() %}{% set ns.items = ns.items + [(climate, end.isoformat())] %}{% endif %}
@@ -115,3 +110,45 @@ template:
         attributes:
           starts: "{{ starts }}"
           ends: "{{ ends }}"
+          levels: "{{ levels }}"
+
+script:
+  ac_good_sleep_extend:
+    alias: AC Good Sleep Extend
+    description: Adds time to a Samsung AC's running Good Sleep (12 hours at most in all)
+    icon: mdi:timer-plus-outline
+    mode: parallel
+    fields:
+      entity_id:
+        description: Air conditioner in Good Sleep
+        required: true
+        selector:
+          entity:
+            domain: climate
+      hours:
+        description: Hours to add
+        default: 1
+        selector:
+          number:
+            min: 0.5
+            max: 12
+            step: 0.5
+    sequence:
+      - variables:
+          level: >-
+            {% from 'good_sleep.jinja' import good_sleep_extended_level %}
+            {{ good_sleep_extended_level((state_attr('sensor.ac_good_sleep_ends', 'ends') or {}).get(entity_id), now(), hours | default(1)) }}
+      - condition: template
+        value_template: "{{ level | int(0) > 0 }}"
+      - action: smartthing_extra.send_command
+        data:
+          device_id: "{{ device_id(entity_id) }}"
+          component: main
+          capability: CUSTOM_AIR_CONDITIONER_TROPICAL_NIGHT_MODE
+          command: SET_AC_TROPICAL_NIGHT_MODE_LEVEL
+          arguments:
+            - "{{ level | int }}"
+      - event: ac_good_sleep_level
+        event_data:
+          climate: "{{ entity_id }}"
+          level: "{{ level | int }}"

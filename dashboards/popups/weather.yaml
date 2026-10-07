@@ -6,34 +6,24 @@ icon: mdi:weather-partly-cloudy
 bg_blur: 16
 cards:
   - type: custom:weather-forecast-card
-    entity: weather.forecast_home
-    name: Casa
-    show_hourly_forecast: true
-    show_daily_forecast: true
+    entity: weather.home
+    show_current: true
+    show_forecast: true
+    default_forecast: hourly
+    show_condition_effects: true
+    show_moon_phase: true
+    show_attributes:
+      - humidity
+      - wind_speed
+      - apparent_temperature
+      - precipitation
+    attributes_layout: compact
+    tap_action:
+      action: none
+    forecast:
+      mode: chart
+      show_attribute_selector: true
+      show_sun_times: true
     card_mod:
-      style: |
-        ha-card {
-          border-radius: 24px;
-          border: 1px solid rgba(202, 211, 245, 0.08);
-          overflow: hidden;
-        }
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Detalhes Climáticos
-    icon: mdi:thermometer-lines
-
-  - type: horizontal-stack
-    cards:
-      - type: custom:bubble-card
-        card_type: button
-        button_type: state
-        entity: weather.forecast_home
-        name: Condição
-        icon: mdi:weather-cloudy
-      - type: custom:bubble-card
-        card_type: button
-        button_type: state
-        entity: sensor.living_room_radar_target_distance
-        name: Radar Sala
-        icon: mdi:radar
+      style: |-
+        ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); }

@@ -1,0 +1,140 @@
+type: vertical-stack
+cards:
+  # Greeting
+  - type: custom:button-card
+    show_name: false
+    show_icon: false
+    tap_action:
+      action: none
+    styles:
+      card:
+        - background: transparent
+        - border: none
+        - box-shadow: none
+        - padding: 20px 12px 0 12px
+      grid:
+        - grid-template-areas: "'greeting'"
+      custom_fields:
+        greeting:
+          - justify-self: start
+          - text-align: left
+          - font-size: 26px
+          - font-weight: 700
+          - letter-spacing: -0.5px
+          - color: var(--catppuccin-text,  #cad3f5)
+    custom_fields:
+      greeting: |
+        [[[
+          const hour = new Date().getHours();
+          const greet = hour >= 5 && hour < 12 ? 'Bom dia' : hour >= 12 && hour < 18 ? 'Boa tarde' : 'Boa noite';
+          return `${greet}, ${hass.user?.name?.split(' ')[0] || ''} 👋`;
+        ]]]
+
+  # Sentence with tappable pills
+  - type: custom:paper-buttons-row
+    styles:
+      justify-content: flex-start
+      flex-wrap: wrap
+      row-gap: 6px
+      column-gap: 6px
+      font-size: 17px
+      line-height: 1.5em
+      padding: 10px 12px 14px 12px
+    base_config:
+      ripple: none
+      styles:
+        button:
+          padding: 0
+          flex-shrink: 0
+          background: transparent
+        name:
+          color: var(--catppuccin-subtext1,  #b8c0e0)
+    buttons:
+      - name: Lá fora está
+      - entity: weather.home
+        layout: name
+        name: >-
+          {% set map = {'sunny': 'ensolarado', 'clear-night': 'noite limpa', 'cloudy': 'nublado',
+             'partlycloudy': 'parcialmente nublado', 'rainy': 'chuvoso', 'pouring': 'chuva forte',
+             'lightning': 'com raios', 'lightning-rainy': 'tempestuoso', 'fog': 'com neblina',
+             'hail': 'com granizo', 'snowy': 'nevando', 'windy': 'ventando', 'exceptional': 'instável'} %}
+          {% set w = states('weather.home') %}
+          {% set t = state_attr('weather.home', 'temperature') %}
+          {% if w in ['unavailable', 'unknown'] or t is none %}--{% else %}{{ map.get(w, w) }}, {{ t | float(0) | round(0) | int }}°{% endif %}
+        tap_action:
+          action: navigate
+          navigation_path: "#weather"
+        styles: &pill
+          button:
+            padding: 2px 12px
+            border-radius: 24px
+            background: var(--catppuccin-text,  #cad3f5)
+            flex-shrink: 0
+          name:
+            color: var(--catppuccin-base,  #24273a)
+            font-weight: 600
+      - name: ". Temos"
+      - entity: sensor.lights_on
+        layout: name
+        name: >-
+          {% set n = states('sensor.lights_on') | int(0) %}
+          {{ 'nenhuma luz' if n == 0 else '1 luz' if n == 1 else n ~ ' luzes' }} 💡
+        tap_action:
+          action: navigate
+          navigation_path: "#lights"
+        styles:
+          button:
+            padding: 2px 12px
+            border-radius: 24px
+            flex-shrink: 0
+            background: >-
+              {{ 'var(--catppuccin-yellow, #eed49f)' if states('sensor.lights_on') | int(0) > 0
+                 else 'var(--catppuccin-text, #cad3f5)' }}
+            box-shadow: >-
+              {{ '0 0 14px rgba(238, 212, 159, 0.55)' if states('sensor.lights_on') | int(0) > 0 else 'none' }}
+          name:
+            color: var(--catppuccin-base,  #24273a)
+            font-weight: 600
+      - name: e
+      - entity: sensor.acs_on
+        layout: name
+        name: >-
+          {% set n = states('sensor.acs_on') | int(0) %}
+          {{ 'nenhum AC' if n == 0 else '1 AC' if n == 1 else n ~ ' ACs' }} ❄️
+        tap_action:
+          action: navigate
+          navigation_path: "#climate"
+        styles: *pill
+      - name: ligados. Alarme
+      - entity: alarm_control_panel.home
+        layout: name
+        name: >-
+          {% set s = states('alarm_control_panel.home') %}
+          {{ {'disarmed': 'desarmado', 'armed_away': 'armado', 'armed_home': 'armado (casa)',
+              'armed_night': 'armado (noite)', 'arming': 'armando…', 'pending': 'pendente',
+              'triggered': 'DISPARADO'}.get(s, 'indisponível') }} 🛡️
+        tap_action:
+          action: more-info
+        styles:
+          button:
+            padding: 2px 12px
+            border-radius: 24px
+            flex-shrink: 0
+            background: >-
+              {% set s = states('alarm_control_panel.home') %}
+              {{ 'var(--catppuccin-red, #ed8796)' if s.startswith('armed') or s == 'triggered'
+                 else 'var(--catppuccin-text, #cad3f5)' }}
+          name:
+            color: var(--catppuccin-base,  #24273a)
+            font-weight: 600
+      - name: · hoje
+      - entity: sensor.events_today
+        layout: name
+        name: >-
+          {% if states('sensor.events_today') in ['unavailable', 'unknown'] %}-- 📅{% else %}
+          {% set n = states('sensor.events_today') | int(0) %}
+          {{ 'nenhum compromisso' if n == 0 else '1 compromisso' if n == 1 else n ~ ' compromissos' }} 📅{% endif %}
+        tap_action:
+          action: navigate
+          navigation_path: "#calendar"
+        styles: *pill

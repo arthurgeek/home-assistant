@@ -1,0 +1,75 @@
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: 1fr 1fr
+  grid-template-rows: auto 70px
+  grid-gap: 10px
+  margin: 8px 0 0 0
+  grid-template-areas: |
+    "camera camera"
+    "street street"
+    "garage laundry"
+  mediaquery:
+    "(min-width: 900px)":
+      grid-template-columns: 2fr 1fr
+      grid-template-rows: auto
+      grid-template-areas: |
+        "camera outside"
+cards:
+  - type: vertical-stack
+    view_layout:
+      grid-area: camera
+    cards:
+      - !include ../../cards/doorbell.yaml
+
+  - type: custom:button-card
+    template: tile
+    view_layout:
+      grid-area: street
+    entity: light.street_lights
+    variables:
+      icon: mdi:outdoor-lamp
+      label: "[[[ return entity?.state === 'on' ? 'Acesas' : entity?.state === 'off' ? 'Apagadas' : '--' ]]]"
+      sublabel: Luzes externas
+      active: "[[[ return entity?.state === 'on' ]]]"
+      accent: "var(--catppuccin-yellow, #eed49f)"
+      animation: "[[[ return entity?.state === 'on' ? 'glow 3s ease-in-out infinite' : 'none' ]]]"
+    tap_action:
+      action: toggle
+    hold_action:
+      action: more-info
+
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: garage
+    variables:
+      room: sensor.garage_room
+      icon: mdi:garage
+      circle_color: "var(--catppuccin-peach, #f5a97f)"
+      lights:
+        - light.garage_light
+        - light.garage_front_light
+      popup: "#garage"
+      buttons:
+        - icon: mdi:lightbulb
+          entity: light.garage_light
+          kind: toggle
+        - icon: mdi:coach-lamp
+          entity: light.garage_front_light
+          kind: toggle
+
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: laundry
+    variables:
+      room: sensor.laundry_room
+      icon: mdi:washing-machine
+      circle_color: "var(--catppuccin-blue, #8aadf4)"
+      popup: "#laundry"
+      subtitle: |-
+        [[[
+          const label = (s) => ({power_off: 'desligada', end: 'concluída', unknown: '--', unavailable: '--'}[s] ?? 'em uso');
+          return `Lav. ${label(states['sensor.washer_current_status']?.state)} · Sec. ${label(states['sensor.dryer_current_status']?.state)}`;
+        ]]]

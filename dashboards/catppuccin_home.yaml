@@ -1,4 +1,8 @@
 button_card_templates: !include templates/button_card_templates.yaml
+streamline_templates: !include streamline_templates.yaml
+
+kiosk_mode:
+  hide_header: true
 
 title: "Casa"
 views:

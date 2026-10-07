@@ -1,0 +1,9 @@
+type: custom:button-card
+template: ac_card
+variables:
+  climate: climate.office_ac
+  room: sensor.office_room
+  samsung: true
+  temp_sensor: sensor.office_office_air_conditioner_temperature
+  humidity_sensor: sensor.office_office_air_conditioner_humidity
+  power_sensor: sensor.office_ac_power

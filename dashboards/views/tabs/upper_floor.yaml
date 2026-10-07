@@ -1,0 +1,102 @@
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: 1fr 1fr
+  grid-template-rows: 130px 130px 176px
+  grid-gap: 10px
+  margin: 8px 0 0 0
+  grid-template-areas: |
+    "office suite"
+    "office suite"
+    "kids kids"
+  mediaquery:
+    "(min-width: 900px)":
+      grid-template-columns: 1fr 1fr 2fr
+      grid-template-rows: 176px
+      grid-template-areas: |
+        "office suite kids"
+cards:
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: office
+    variables:
+      room: sensor.office_room
+      icon: mdi:desk
+      circle_color: "var(--catppuccin-mauve, #c6a0f6)"
+      temp_sensor: sensor.office_office_air_conditioner_temperature
+      presence: binary_sensor.office_presence
+      lights:
+        - light.office_light
+      popup: "#office"
+      buttons:
+        - icon: mdi:lightbulb
+          entity: light.office_light
+          kind: toggle
+        - icon: mdi:air-conditioner
+          entity: climate.office_ac
+          kind: ac
+
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: suite
+    variables:
+      room: sensor.main_bedroom_room
+      icon: mdi:bed-king
+      circle_color: "var(--catppuccin-lavender, #b7bdf8)"
+      temp_sensor: sensor.main_bedroom_main_bedroom_ac_temperature
+      popup: "#main_bedroom"
+      buttons:
+        - icon: mdi:air-conditioner
+          entity: climate.main_bedroom_ac
+          kind: ac
+
+  - type: custom:css-swipe-card
+    view_layout:
+      grid-area: kids
+    cardId: upper_floor_kids
+    pagination: true
+    height: 150px
+    custom_css:
+      "--pagination-bullet-active-background-color": "var(--catppuccin-mauve, #c6a0f6)"
+      "--pagination-bullet-background-color": "var(--catppuccin-surface1, #494d64)"
+      "--pagination-bullet-border": none
+      "--pagination-bullet-distance": 6px
+    cards:
+      - type: custom:button-card
+        template: room_card_v2
+        variables:
+          room: sensor.kids_bedroom_1_room
+          icon: mdi:bed
+          circle_color: "var(--catppuccin-sapphire, #7dc4e4)"
+          temp_sensor: sensor.kids_bedroom_1_ac_temperature
+          popup: "#kids_bedroom_1"
+          buttons:
+            - icon: mdi:air-conditioner
+              entity: climate.kids_bedroom_1_ac
+              kind: ac
+      - type: custom:button-card
+        template: room_card_v2
+        variables:
+          room: sensor.kids_bedroom_2_room
+          icon: mdi:bed
+          circle_color: "var(--catppuccin-teal, #8bd5ca)"
+          temp_sensor: sensor.kids_bedroom_2_ac_temperature
+          popup: "#kids_bedroom_2"
+          buttons:
+            - icon: mdi:air-conditioner
+              entity: climate.kids_bedroom_2_ac
+              kind: ac
+      - type: custom:button-card
+        template: room_card_v2
+        variables:
+          room: sensor.kids_bedroom_3_room
+          icon: mdi:bed
+          circle_color: "var(--catppuccin-pink, #f5bde6)"
+          temp_sensor: sensor.kids_bedroom_3_ac_temperature
+          popup: "#kids_bedroom_3"
+          buttons:
+            - icon: mdi:air-conditioner
+              entity: climate.kids_bedroom_3_ac
+              kind: ac

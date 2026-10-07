@@ -1,0 +1,9 @@
+type: custom:button-card
+template: ac_card
+variables:
+  climate: climate.kids_bedroom_2_ac
+  room: sensor.kids_bedroom_2_room
+  samsung: true
+  temp_sensor: sensor.kids_bedroom_2_ac_temperature
+  humidity_sensor: sensor.kids_bedroom_2_ac_humidity
+  power_sensor: sensor.kids_bedroom_2_ac_power

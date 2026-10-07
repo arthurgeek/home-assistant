@@ -12,6 +12,8 @@ script:
           entity:
             domain: climate
     sequence:
+      - variables:
+          was_off: "{{ is_state(entity_id, 'off') }}"
       - action: climate.set_hvac_mode
         target:
           entity_id: "{{ entity_id }}"
@@ -22,6 +24,56 @@ script:
           entity_id: "{{ entity_id }}"
         data:
           temperature: 23
+      - if:
+          - condition: template
+            value_template: "{{ was_off }}"
+        then:
+          - action: script.turn_on
+            target:
+              entity_id: script.ac_verify_on
+            data:
+              variables:
+                entity_id: "{{ entity_id }}"
+
+  ac_verify_on:
+    alias: Verify AC Turned On
+    description: Checks that an AC really turned on; if SmartThings stopped updating, reloads it and notifies both parents
+    icon: mdi:connection
+    mode: parallel
+    fields:
+      entity_id:
+        description: Air conditioner that was just turned on
+        required: true
+        selector:
+          entity:
+            domain: climate
+    sequence:
+      # unavailable is the integration reloading, not the AC being on
+      - wait_template: "{{ states(entity_id) not in ['off', 'unavailable', 'unknown'] }}"
+        timeout: "00:01:00"
+        continue_on_timeout: true
+      - if:
+          - condition: template
+            value_template: "{{ not wait.completed }}"
+        then:
+          - action: homeassistant.reload_config_entry
+            data:
+              entry_id: "{{ config_entry_id(entity_id) }}"
+          - wait_template: "{{ states(entity_id) not in ['off', 'unavailable', 'unknown'] }}"
+            timeout: "00:01:30"
+            continue_on_timeout: true
+          - action: script.notify_parents
+            data:
+              title: "❄️ Ar-condicionado: {{ area_name(entity_id) }}"
+              message: >-
+                {% if wait.completed %}
+                  O SmartThings tinha parado de atualizar e o app mostrava o ar desligado. Reconectei: agora ele aparece ligado.
+                {% else %}
+                  O comando para ligar não chegou ao ar-condicionado. Tente de novo ou use o controle remoto.
+                {% endif %}
+              channel: "General"
+              importance: "high"
+              notification_icon: "mdi:air-conditioner"
 
   ac_good_sleep:
     alias: AC Good Sleep
@@ -91,6 +143,16 @@ script:
               entity_id: number.living_room_ac_sleep_timer
             data:
               value: "{{ hours }}"
+      - if:
+          - condition: template
+            value_template: "{{ was_off }}"
+        then:
+          - action: script.turn_on
+            target:
+              entity_id: script.ac_verify_on
+            data:
+              variables:
+                entity_id: "{{ entity_id }}"
 
   turn_off_all_acs:
     alias: Turn Off All Air Conditioners

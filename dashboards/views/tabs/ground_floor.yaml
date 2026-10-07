@@ -1,0 +1,38 @@
+type: custom:layout-card
+layout_type: custom:grid-layout
+layout:
+  grid-template-columns: 1fr 1fr
+  grid-template-rows: 220px
+  grid-gap: 10px
+  margin: 8px 0 0 0
+  grid-template-areas: |
+    "living_room living_room"
+  mediaquery:
+    "(min-width: 900px)":
+      grid-template-columns: 2fr 1fr 1fr
+      grid-template-rows: 220px
+      grid-template-areas: |
+        "living_room . ."
+cards:
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: living_room
+    variables:
+      room: sensor.living_room_room
+      icon: mdi:sofa
+      circle_color: "var(--catppuccin-green, #a6da95)"
+      climate: climate.living_room_ac
+      presence: binary_sensor.living_room_presence
+      popup: "#living_room"
+      buttons:
+        - icon: mdi:door
+          entity: binary_sensor.main_door
+          kind: press
+          press_entity: button.main_door_unlock
+        - icon: mdi:television
+          entity: media_player.tv_samsung_6_series_55
+          kind: toggle
+        - icon: mdi:air-conditioner
+          entity: climate.living_room_ac
+          kind: ac

@@ -1,0 +1,5 @@
+type: custom:streamline-card
+template: ac_sleep_chooser
+variables:
+  key: office
+  climate: climate.office_ac

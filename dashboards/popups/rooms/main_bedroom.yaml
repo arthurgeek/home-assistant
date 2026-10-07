@@ -1,41 +1,19 @@
-type: custom:bubble-card
-card_type: pop-up
-hash: '#main_bedroom'
-name: Suíte Master
-icon: mdi:bed-king
-bg_blur: 16
-cards:
-  - type: custom:bubble-card
-    card_type: separator
-    name: Climatização
-    icon: mdi:air-conditioner
-
-  - type: custom:bubble-card
-    card_type: climate
-    entity: climate.main_bedroom_ac
-    name: AC Suíte Master
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Conforto & Clima
-    icon: mdi:chart-timeline-variant
-
-  - type: custom:mini-graph-card
-    entities:
-      - entity: sensor.main_bedroom_main_bedroom_ac_temperature
-        name: Temperatura
-      - entity: sensor.main_bedroom_main_bedroom_ac_humidity
-        name: Umidade
-        y_axis: secondary
-    hours_to_show: 24
-    line_width: 3
-    points_per_hour: 2
-    animate: true
-    card_mod:
-      style: |-
-        ha-card {
-          background: rgba(36, 39, 58, 0.6);
-          border-radius: 20px;
-          border: 1px solid rgba(202, 211, 245, 0.08);
-          padding: 12px;
-        }
+type: custom:streamline-card
+template: room_popup
+variables:
+  key: main_bedroom
+  icon: mdi:bed-king
+  cards:
+    - type: custom:bubble-card
+      card_type: separator
+      name: Climatização
+      icon: mdi:air-conditioner
+    - !include ../../cards/ac/main_bedroom.yaml
+    - type: custom:streamline-card
+      template: history_graph
+      grid_options:
+        columns: full  # Bubble gives cards without a size hint half the pop-up, one row high
+        rows: auto
+      variables:
+        temperature: sensor.main_bedroom_room
+        humidity: sensor.main_bedroom_main_bedroom_ac_humidity

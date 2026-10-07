@@ -1,0 +1,47 @@
+type: custom:mysmart-floating-navbar
+styles:
+  background: "rgba(202, 211, 245, 0.95)"
+  color: "var(--catppuccin-surface2, #5b6078)"
+  active_color: "var(--catppuccin-mauve, #c6a0f6)"
+  icon_size: 24px
+  blur: 12px
+items:
+  - icon: mdi:lightbulb-outline
+    hide_name: true
+    tap_action:
+      action: navigate
+      navigation_path: "#lights"
+  - icon: mdi:air-conditioner
+    hide_name: true
+    tap_action:
+      action: navigate
+      navigation_path: "#climate"
+  - icon: mdi:music
+    hide_name: true
+    tap_action:
+      action: navigate
+      navigation_path: "#media"
+  - icon: mdi:robot-vacuum
+    hide_name: true
+    tap_action:
+      action: navigate
+      navigation_path: "#vacuum"
+  - icon: mdi:calendar-month
+    hide_name: true
+    tap_action:
+      action: navigate
+      navigation_path: "#calendar"
+  - icon: mdi:dots-horizontal
+    hide_name: true
+    sub_items:
+      - icon: mdi:checkbox-marked-outline
+        tap_action:
+          action: navigate
+          navigation_path: "#todo"
+      - icon: mdi:menu
+        tap_action:
+          action: toggle-menu
+      - icon: mdi:cog
+        tap_action:
+          action: navigate
+          navigation_path: /config

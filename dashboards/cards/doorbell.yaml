@@ -1,0 +1,58 @@
+type: custom:advanced-camera-card
+cameras:
+  - camera_entity: camera.doorbell
+    live_provider: go2rtc
+    go2rtc:
+      # Reached through Home Assistant's web proxy, so it works away from home.
+      url: http://10.10.5.231:1984
+      stream: doorbell
+      modes:
+        - webrtc
+    proxy:
+      dynamic: false  # the web proxy has a fixed URL pattern for go2rtc, not dynamic URLs
+    capabilities:
+      force:
+        - 2-way-audio
+    triggers:
+      entities:
+        - binary_sensor.doorbell
+image:
+  mode: camera
+live:
+  preload: true
+  lazy_load: false
+  auto_mute:
+    - unselected
+  auto_unmute:
+    - selected
+    - call
+profiles:
+  - doorbell
+automations:
+  - triggers:
+      - trigger: expand
+        expand: true
+    actions:
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: call_start
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: unmute
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: microphone_unmute
+  - triggers:
+      - trigger: expand
+        expand: false
+    actions:
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: call_end
+  - triggers:
+      - trigger: call
+        to: answered
+    actions:
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: unmute
+      - action: custom:advanced-camera-card-action
+        advanced_camera_card_action: microphone_unmute
+dimensions:
+  aspect_ratio_mode: static
+  aspect_ratio: "16:9"

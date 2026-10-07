@@ -1,0 +1,9 @@
+type: custom:button-card
+template: ac_card
+variables:
+  climate: climate.main_bedroom_ac
+  room: sensor.main_bedroom_room
+  samsung: true
+  temp_sensor: sensor.main_bedroom_main_bedroom_ac_temperature
+  humidity_sensor: sensor.main_bedroom_main_bedroom_ac_humidity
+  power_sensor: sensor.main_bedroom_ac_power

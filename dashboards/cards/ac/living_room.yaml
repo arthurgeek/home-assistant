@@ -1,0 +1,8 @@
+type: custom:button-card
+template: ac_card
+variables:
+  climate: climate.living_room_ac
+  room: sensor.living_room_room
+  samsung: false
+  energy_today_sensor: sensor.living_room_ac_energy_today
+  eco_switch: switch.living_room_ac_energy_saving
