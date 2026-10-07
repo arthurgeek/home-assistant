@@ -41,24 +41,3 @@ automation:
                   title: "Armar Alarme"
                 - action: "DISMISS"
                   title: "Deixar Desarmado"
-
-  - id: leaving_home_arm_alarm_response
-    alias: Leaving Home · Arm Alarm Response
-    description: Arms the alarm when user taps Armar Alarme on the notification
-    mode: single
-    triggers:
-      - trigger: event
-        event_type: mobile_app_notification_action
-        event_data:
-          action: "ARM_ALARM_AWAY"
-    actions:
-      - action: alarm_control_panel.alarm_arm_away
-        target:
-          entity_id: alarm_control_panel.home
-      - action: script.notify_parents
-        data:
-          title: "Alarme Armado"
-          message: "O alarme da casa foi armado em modo Total."
-          channel: "General"
-          importance: "low"
-          notification_icon: "mdi:shield-check"

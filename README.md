@@ -35,7 +35,8 @@ Dashboard cards and theme:
 
 Integrations:
 [SmartThings Extra](https://github.com/mik-laj/ha_smartthing_extra),
-[Microsoft Edge TTS](https://github.com/hasscc/hass-edge-tts).
+[Microsoft Edge TTS](https://github.com/hasscc/hass-edge-tts),
+[Verisure OWA](https://github.com/guerrerotook/securitas-direct-new-api).
 
 ## Setup
 

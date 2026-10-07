@@ -1,0 +1,89 @@
+automation:
+  # The integration keeps a blocked arm forceable for ~180 s; after that nothing is armed and,
+  # without this, nobody would know. Notify both of us with the open zones and a retry button.
+  - id: alarm_force_arm_expired
+    alias: Alarm · Force-Arm Expired
+    description: Warns both parents when a blocked arm was not forced in time, offering to arm again
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: verisure_owa_force_arm_expired
+    actions:
+      - variables:
+          mode: "{{ trigger.event.data.mode | default('armed_away') }}"
+          message: >-
+            {% set zones = trigger.event.data.zones | default([]) %}
+            {% set label = {'armed_away': 'Fora', 'armed_home': 'Casa'}.get(trigger.event.data.mode, 'Fora') %}
+            O alarme ({{ label }}) não foi armado: {{ zones | join(', ') if zones else 'sensores abertos' }}.
+            Feche e toque em Armar novamente.
+      - action: script.notify_parents
+        data:
+          title: "⚠️ Alarme não foi armado"
+          message: "{{ message }}"
+          channel: "General"
+          importance: "high"
+          notification_icon: "mdi:shield-alert"
+          actions:
+            - action: "{{ 'ARM_ALARM_HOME' if mode == 'armed_home' else 'ARM_ALARM_AWAY' }}"
+              title: "Armar novamente"
+            - action: "DISMISS"
+              title: "Ignorar"
+
+  # Bedtime: if someone is home and the alarm is still disarmed, offer to arm in Home mode.
+  - id: alarm_bedtime_reminder
+    alias: Alarm · Bedtime Reminder
+    description: At 23:00 and again at 23:30, reminds both parents to arm the alarm if it is still disarmed
+    mode: single
+    triggers:
+      - trigger: time
+        at: "23:00:00"
+      - trigger: time
+        at: "23:30:00"
+    conditions:
+      - condition: state
+        entity_id: alarm_control_panel.home
+        state: disarmed
+      - condition: state
+        entity_id: binary_sensor.anyone_home
+        state: "on"
+    actions:
+      - action: script.notify_parents
+        data:
+          title: "🌙 Alarme desarmado"
+          message: "Já são {{ now().strftime('%H:%M') }} e o alarme está desarmado. Armar em modo Casa?"
+          channel: "General"
+          importance: "high"
+          notification_icon: "mdi:shield-moon"
+          actions:
+            - action: "ARM_ALARM_HOME"
+              title: "Armar (Casa)"
+            - action: "DISMISS"
+              title: "Agora não"
+
+  # Handles every "arm" button we send in notifications (leaving home, force-arm expiry).
+  - id: alarm_arm_from_notification
+    alias: Alarm · Arm From Notification
+    description: Arms the alarm in the mode requested by a notification button and confirms to both parents
+    mode: single
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "ARM_ALARM_AWAY"
+        id: armed_away
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: "ARM_ALARM_HOME"
+        id: armed_home
+    actions:
+      - action: "alarm_control_panel.alarm_arm_{{ 'home' if trigger.id == 'armed_home' else 'away' }}"
+        target:
+          entity_id: alarm_control_panel.home
+      - action: script.notify_parents
+        data:
+          title: "Alarme armado"
+          message: "O alarme da casa foi armado em modo {{ 'Casa' if trigger.id == 'armed_home' else 'Fora' }}."
+          channel: "General"
+          importance: "low"
+          notification_icon: "mdi:shield-check"
