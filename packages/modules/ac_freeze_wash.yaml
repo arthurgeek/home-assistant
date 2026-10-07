@@ -1,0 +1,134 @@
+# Samsung Freeze Wash cleans the indoor coil by freezing and thawing it. SmartThings exposes no command for it, so
+# Arthur starts it from the SmartThings app; this reminds him once an AC has cooled for 480 hours since its last one
+# (Samsung's SmartThings alert interval). Hours are counted here: the recorder keeps only 10 days of history.
+input_number:
+  main_bedroom_ac_freeze_wash_hours: &hours
+    name: Main Bedroom Ac Freeze Wash Hours
+    min: 0
+    max: 10000
+    step: 0.01
+    mode: box
+    unit_of_measurement: h
+    icon: mdi:snowflake-melt
+  office_ac_freeze_wash_hours:
+    <<: *hours
+    name: Office Ac Freeze Wash Hours
+  kids_bedroom_1_ac_freeze_wash_hours:
+    <<: *hours
+    name: Kids Bedroom 1 Ac Freeze Wash Hours
+  kids_bedroom_2_ac_freeze_wash_hours:
+    <<: *hours
+    name: Kids Bedroom 2 Ac Freeze Wash Hours
+  kids_bedroom_3_ac_freeze_wash_hours:
+    <<: *hours
+    name: Kids Bedroom 3 Ac Freeze Wash Hours
+
+input_datetime:
+  main_bedroom_ac_last_freeze_wash: &last
+    name: Main Bedroom Ac Last Freeze Wash
+    has_date: true
+    has_time: false
+  office_ac_last_freeze_wash:
+    <<: *last
+    name: Office Ac Last Freeze Wash
+  kids_bedroom_1_ac_last_freeze_wash:
+    <<: *last
+    name: Kids Bedroom 1 Ac Last Freeze Wash
+  kids_bedroom_2_ac_last_freeze_wash:
+    <<: *last
+    name: Kids Bedroom 2 Ac Last Freeze Wash
+  kids_bedroom_3_ac_last_freeze_wash:
+    <<: *last
+    name: Kids Bedroom 3 Ac Last Freeze Wash
+
+automation:
+  - id: ac_freeze_wash_hours
+    alias: AC · Freeze Wash Hours
+    description: Every 5 minutes, adds 5 minutes to each Samsung AC that is cooling or drying
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: /5
+    variables:
+      cooling: >-
+        {% set ns = namespace(acs=[]) %}
+        {% for ac in label_entities('samsung') | map('replace', 'climate.', '') %}
+          {% if states('climate.' ~ ac) in ['cool', 'dry'] %}{% set ns.acs = ns.acs + [ac] %}{% endif %}
+        {% endfor %}
+        {{ ns.acs }}
+    actions:
+      - repeat:
+          for_each: "{{ cooling }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: "input_number.{{ repeat.item }}_freeze_wash_hours"
+              data:
+                value: "{{ (states('input_number.' ~ repeat.item ~ '_freeze_wash_hours') | float(0) + 5 / 60) | round(2) }}"
+
+  - id: ac_freeze_wash_reminder
+    alias: AC · Freeze Wash Reminder
+    description: Reminds Arthur when an AC passes 480 cooling hours since its last Freeze Wash, and daily at 10:00 while due
+    mode: queued
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - input_number.main_bedroom_ac_freeze_wash_hours
+          - input_number.office_ac_freeze_wash_hours
+          - input_number.kids_bedroom_1_ac_freeze_wash_hours
+          - input_number.kids_bedroom_2_ac_freeze_wash_hours
+          - input_number.kids_bedroom_3_ac_freeze_wash_hours
+        above: 480
+      - trigger: time
+        at: "10:00:00"
+    variables:
+      # The AC that crossed 480 h, or all of them for the daily check (each is checked below)
+      due: >-
+        {{ [trigger.entity_id.split('.')[1] | replace('_freeze_wash_hours', '')] if trigger.platform == 'numeric_state'
+           else label_entities('samsung') | map('replace', 'climate.', '') | list }}
+    actions:
+      - repeat:
+          for_each: "{{ due }}"
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ states('input_number.' ~ repeat.item ~ '_freeze_wash_hours') | float(0) > 480 }}"
+              then:
+                - action: script.notify_person
+                  data:
+                    person: person.arthur
+                    title: "🧊 Freeze Wash: {{ area_name('climate.' ~ repeat.item) }}"
+                    message: >-
+                      {{ states('input_number.' ~ repeat.item ~ '_freeze_wash_hours') | float(0) | round(0) | int }} h de uso
+                      desde a última limpeza. Inicie o Freeze Wash pelo app SmartThings.
+                    tag: "freeze_wash_{{ repeat.item }}"
+                    click_action: app://com.samsung.android.oneconnect
+                    importance: low
+                    notification_icon: mdi:snowflake-melt
+                    actions:
+                      - action: "FREEZE_WASH_DONE:{{ repeat.item }}"
+                        title: Feito
+
+  - id: ac_freeze_wash_done
+    alias: AC · Freeze Wash Done
+    description: '"Feito" on a Freeze Wash reminder resets that AC''s hours and records the date'
+    mode: queued
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.event.data.action is string and trigger.event.data.action.startswith('FREEZE_WASH_DONE:') }}"
+    variables:
+      ac: "{{ trigger.event.data.action.split(':')[1] }}"
+    actions:
+      - action: input_number.set_value
+        target:
+          entity_id: "input_number.{{ ac }}_freeze_wash_hours"
+        data:
+          value: 0
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: "input_datetime.{{ ac }}_last_freeze_wash"
+        data:
+          date: "{{ now().date() }}"
