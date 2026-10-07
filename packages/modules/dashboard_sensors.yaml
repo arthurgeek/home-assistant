@@ -1,4 +1,13 @@
 template:
+  # Order of the AC carousel on Casa: ACs that are on first (custom_templates/ac.jinja)
+  - sensor:
+      - name: AC Order
+        unique_id: ac_order
+        default_entity_id: sensor.ac_order
+        icon: mdi:sort
+        state: "{% from 'ac.jinja' import ac_live_order %}{{ (ac_live_order() | from_json)[0] }}"
+        attributes:
+          order: "{% from 'ac.jinja' import ac_live_order %}{{ ac_live_order() | from_json }}"
   - sensor:
       - name: Lights On
         unique_id: lights_on

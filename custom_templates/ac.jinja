@@ -1,0 +1,13 @@
+{#- Air conditioners. -#}
+
+{#- `acs` reordered with the ones in `on` first; each group keeps the order of `acs`. As JSON. -#}
+{%- macro ac_order(acs, on) -%}
+  {{- ((acs | select('in', on) | list) + (acs | reject('in', on) | list)) | to_json -}}
+{%- endmacro -%}
+
+{#- The Casa carousel order from the live states, on ones first, over this base order. As JSON. -#}
+{%- macro ac_live_order() -%}
+  {%- set base = ['climate.main_bedroom_ac', 'climate.office_ac', 'climate.living_room_ac',
+                  'climate.kids_bedroom_1_ac', 'climate.kids_bedroom_2_ac', 'climate.kids_bedroom_3_ac'] -%}
+  {{- ac_order(base, base | reject('is_state', ['off', 'unavailable', 'unknown']) | list) -}}
+{%- endmacro -%}
