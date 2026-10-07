@@ -1,0 +1,142 @@
+# Samsung auto clean (coil drying after switch-off) only when ~6h of cooling/dry has built up since the
+# last clean, instead of after every session. The AC decides at switch-off, so the setting is chosen at
+# switch-on for that session.
+input_datetime:
+  main_bedroom_ac_last_clean:
+    name: Main Bedroom Ac Last Clean
+    has_date: true
+    has_time: true
+  office_ac_last_clean:
+    name: Office Ac Last Clean
+    has_date: true
+    has_time: true
+  kids_bedroom_1_ac_last_clean:
+    name: Kids Bedroom 1 Ac Last Clean
+    has_date: true
+    has_time: true
+  kids_bedroom_2_ac_last_clean:
+    name: Kids Bedroom 2 Ac Last Clean
+    has_date: true
+    has_time: true
+  kids_bedroom_3_ac_last_clean:
+    name: Kids Bedroom 3 Ac Last Clean
+    has_date: true
+    has_time: true
+
+input_boolean:
+  main_bedroom_ac_clean_pending:
+    name: Main Bedroom Ac Clean Pending
+  office_ac_clean_pending:
+    name: Office Ac Clean Pending
+  kids_bedroom_1_ac_clean_pending:
+    name: Kids Bedroom 1 Ac Clean Pending
+  kids_bedroom_2_ac_clean_pending:
+    name: Kids Bedroom 2 Ac Clean Pending
+  kids_bedroom_3_ac_clean_pending:
+    name: Kids Bedroom 3 Ac Clean Pending
+
+sensor:
+  - platform: history_stats
+    name: Main Bedroom Ac Cooling Since Clean
+    unique_id: main_bedroom_ac_cooling_since_clean
+    entity_id: climate.main_bedroom_ac
+    state:
+      - cool
+      - dry
+    type: time
+    start: "{{ states('input_datetime.main_bedroom_ac_last_clean') | as_datetime | as_local }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Office Ac Cooling Since Clean
+    unique_id: office_ac_cooling_since_clean
+    entity_id: climate.office_ac
+    state:
+      - cool
+      - dry
+    type: time
+    start: "{{ states('input_datetime.office_ac_last_clean') | as_datetime | as_local }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Kids Bedroom 1 Ac Cooling Since Clean
+    unique_id: kids_bedroom_1_ac_cooling_since_clean
+    entity_id: climate.kids_bedroom_1_ac
+    state:
+      - cool
+      - dry
+    type: time
+    start: "{{ states('input_datetime.kids_bedroom_1_ac_last_clean') | as_datetime | as_local }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Kids Bedroom 2 Ac Cooling Since Clean
+    unique_id: kids_bedroom_2_ac_cooling_since_clean
+    entity_id: climate.kids_bedroom_2_ac
+    state:
+      - cool
+      - dry
+    type: time
+    start: "{{ states('input_datetime.kids_bedroom_2_ac_last_clean') | as_datetime | as_local }}"
+    end: "{{ now() }}"
+  - platform: history_stats
+    name: Kids Bedroom 3 Ac Cooling Since Clean
+    unique_id: kids_bedroom_3_ac_cooling_since_clean
+    entity_id: climate.kids_bedroom_3_ac
+    state:
+      - cool
+      - dry
+    type: time
+    start: "{{ states('input_datetime.kids_bedroom_3_ac_last_clean') | as_datetime | as_local }}"
+    end: "{{ now() }}"
+
+automation:
+  - id: ac_auto_clean_scheduler
+    alias: AC · Auto Clean Scheduler
+    description: Enables Samsung auto clean for a session only after ~6h of cooling since the last clean
+    mode: parallel
+    triggers:
+      - trigger: climate.turned_on
+        target:
+          label_id: samsung
+        options:
+          behavior: each
+        id: started
+      - trigger: climate.turned_off
+        target:
+          label_id: samsung
+        options:
+          behavior: each
+        id: stopped
+    actions:
+      - variables:
+          ac: "{{ trigger.entity_id.split('.')[1] }}"
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: started
+            sequence:
+              - variables:
+                  due: "{{ states('sensor.' ~ ac ~ '_cooling_since_clean') | float(0) >= 6 }}"
+              - action: smartthing_extra.send_command
+                data:
+                  device_id: "{{ device_id(trigger.entity_id) }}"
+                  component: main
+                  capability: CUSTOM_AUTO_CLEANING_MODE
+                  command: SET_AUTO_CLEANING_MODE
+                  arguments:
+                    - "{{ 'on' if due else 'off' }}"
+              - action: "input_boolean.turn_{{ 'on' if due else 'off' }}"
+                target:
+                  entity_id: "input_boolean.{{ ac }}_clean_pending"
+          - conditions:
+              - condition: trigger
+                id: stopped
+              - condition: template
+                value_template: "{{ is_state('input_boolean.' ~ ac ~ '_clean_pending', 'on') }}"
+            sequence:
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: "input_datetime.{{ ac }}_last_clean"
+                data:
+                  timestamp: "{{ now().timestamp() }}"
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: "input_boolean.{{ ac }}_clean_pending"
