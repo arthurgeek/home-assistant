@@ -31,3 +31,38 @@ automation:
       - action: switch.turn_off
         target:
           entity_id: switch.livingroomneardoorswitch_right
+
+# UniFi Access log of the main door, for the dashboard: the UA Ultra has no door position sensor, so the door's
+# activity is its accesses (who, when, how). Last 30, newest first; trigger-based, so restored across restarts.
+template:
+  - triggers:
+      - trigger: state
+        entity_id: event.main_door_access
+        not_to:
+          - unknown
+          - unavailable
+      - trigger: event
+        event_type: event_template_reloaded
+      # seed or reset the log with entries from UniFi Access's own log (a list, newest first)
+      - trigger: event
+        event_type: main_door_log_seed
+    sensor:
+      - name: Main Door Log
+        unique_id: main_door_log
+        default_entity_id: sensor.main_door_log
+        icon: mdi:door
+        # time of the latest access (the attribute below still holds the previous log while this renders)
+        state: "{{ states('event.main_door_access') if has_value('event.main_door_access') else this.state }}"
+        attributes:
+          entries: >-
+            {% set s = states.event.main_door_access %}
+            {% set seeded = trigger.platform == 'event' and trigger.event.event_type == 'main_door_log_seed' %}
+            {% set log = trigger.event.data.entries if seeded else state_attr('sensor.main_door_log', 'entries') or [] %}
+            {# the same access can carry slightly different times in the event and in UniFi's log #}
+            {% if s and s.state not in ['unknown', 'unavailable']
+                  and (not log or (as_timestamp(s.state) - as_timestamp(log[0].time)) | abs > 10) %}
+              {% set a = s.attributes %}
+              {% set log = [{'time': s.state, 'who': a.actor, 'how': a.authentication,
+                             'granted': a.event_type == 'access_granted', 'direction': a.direction}] + log %}
+            {% endif %}
+            {{ log[:30] }}
