@@ -8,3 +8,4 @@ flake.lock export-ignore
 .lefthook.toml export-ignore
 README.md export-ignore
 secrets.yaml.example export-ignore
+assets/** export-ignore

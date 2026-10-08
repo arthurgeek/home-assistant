@@ -3,6 +3,8 @@
 YAML packages for the automations, sensors and scripts, plus a phone-first dashboard ("Casa") in the Catppuccin palette.
 The interface is in Brazilian Portuguese; everything else is in English.
 
+<img src="assets/casa.png" alt="Casa: home" width="300"> <img src="assets/upper_floor.png" alt="Casa: upper floor" width="300">
+
 ## Layout
 
 | Path | What lives there |
