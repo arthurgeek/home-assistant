@@ -15,6 +15,70 @@ cards:
       perform_action: script.turn_off_all_acs
       confirmation:
         text: Desligar todos os ar-condicionados?
+  - type: custom:bubble-card
+    card_type: separator
+    name: Consumo
+    icon: mdi:lightning-bolt
+  - type: custom:button-card
+    template: tile
+    entity: sensor.ac_energy_month_total
+    grid_options:
+      columns: 6
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    variables:
+      icon: mdi:flash
+      label: "[[[ const v = parseFloat(entity.state); return isNaN(v) ? '--' : `${v.toFixed(1).replace('.', ',')} kWh` ]]]"
+      sublabel: Este mês · todos os ACs
+    tap_action:
+      action: navigate
+      navigation_path: /energy
+  - type: custom:button-card
+    template: tile
+    entity: sensor.ac_power_total
+    grid_options:
+      columns: 6
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    variables:
+      icon: mdi:flash-outline
+      label: "[[[ const w = parseFloat(entity.state); return isNaN(w) ? '--' : `${Math.round(w)} W` ]]]"
+      sublabel: Agora · ACs Samsung
+      active: "[[[ return parseFloat(entity.state) > 0 ]]]"
+      accent: "var(--catppuccin-yellow, #eed49f)"
+  - type: distribution
+    title: Este mês por ar-condicionado
+    grid_options:
+      columns: full
+    entities:
+      - sensor.ac_month_main_bedroom
+      - sensor.ac_month_office
+      - sensor.ac_month_kids_bedroom_1
+      - sensor.ac_month_kids_bedroom_2
+      - sensor.ac_month_kids_bedroom_3
+      - sensor.ac_month_living_room
+  - type: statistics-graph
+    title: Consumo por mês
+    chart_type: bar-stack
+    period: month
+    stat_types:
+      - change
+    days_to_show: 180
+    grid_options:
+      columns: full
+      rows: auto
+    entities:
+      - sensor.main_bedroom_ac_energy
+      - sensor.office_ac_energy
+      - sensor.kids_bedroom_1_ac_energy
+      - sensor.kids_bedroom_2_ac_energy
+      - sensor.kids_bedroom_3_ac_energy
+  - type: custom:bubble-card
+    card_type: separator
+    name: Aparelhos
+    icon: mdi:air-conditioner
   - !include ../cards/ac/main_bedroom.yaml
   - !include ../cards/ac/office.yaml
   - !include ../cards/ac/living_room.yaml
