@@ -29,3 +29,8 @@ homeassistant:
   internal_url: !secret internal_url
   external_url: !secret external_url
   packages: !include_dir_named packages
+  # Two-factor login with an authenticator app; each user turns it on in their profile.
+  # (HTTP settings, e.g. trusted proxies and IP bans, live in the UI: Settings > System > Network.)
+  auth_mfa_modules:
+    - type: totp
+      name: Authenticator
