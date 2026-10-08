@@ -7,3 +7,11 @@ automation:
       input:
         wall_switch: switch.office_ac_wall_switch
         climate: climate.office_ac
+
+  - id: office_area_empty
+    alias: Office · Area Empty
+    description: Turns off the office lights and AC once the office has been empty for five minutes
+    use_blueprint:
+      path: home/area_empty.yaml
+      input:
+        area: office

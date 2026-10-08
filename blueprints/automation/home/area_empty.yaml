@@ -1,0 +1,33 @@
+blueprint:
+  name: Area empty
+  description: >-
+    Turns off the lights and the air conditioners of an area once all of its occupancy sensors have been clear for a
+    while. A sensor placed in the area is enough; nothing else needs listing.
+  domain: automation
+  input:
+    area:
+      name: Area
+      selector:
+        area: {}
+    delay:
+      name: Delay
+      description: How long the area stays empty before everything is switched off
+      default: "00:05:00"
+      selector:
+        duration: {}
+
+triggers:
+  - trigger: occupancy.cleared
+    target:
+      area_id: !input area
+    options:
+      behavior: all
+      for: !input delay
+
+actions:
+  - action: light.turn_off
+    target:
+      area_id: !input area
+  - action: climate.turn_off
+    target:
+      area_id: !input area
