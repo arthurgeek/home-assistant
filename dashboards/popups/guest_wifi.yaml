@@ -1,0 +1,22 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#guest_wifi'
+name: Wi-Fi visitantes
+icon: mdi:wifi
+bg_blur: 16
+cards:
+  # UniFi's QR for the guest network; follows the password if it changes
+  - type: picture-entity
+    entity: image.geeknet4guest_qr_code
+    show_name: false
+    show_state: false
+    tap_action:
+      action: none
+    card_mod:
+      style: |
+        ha-card { border-radius: 24px; overflow: hidden; background: #fff; padding: 16px; }
+  - type: markdown
+    content: Aponte a câmera do celular para o código para entrar na rede **geeknet4guest**.
+    card_mod:
+      style: |-
+        ha-card { background: none; border: none; text-align: center; color: var(--catppuccin-subtext0, #a5adcb); }

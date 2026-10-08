@@ -73,7 +73,7 @@ cards:
           name:
             color: var(--catppuccin-base,  #24273a)
             font-weight: 600
-      - name: ". Temos"
+      - name: e temos
       - entity: sensor.lights_on
         layout: name
         name: >-
@@ -127,7 +127,7 @@ cards:
           name:
             color: var(--catppuccin-base,  #24273a)
             font-weight: 600
-      - name: · hoje
+      - name: e hoje temos
       - entity: sensor.events_today
         layout: name
         name: >-

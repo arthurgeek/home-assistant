@@ -4,11 +4,12 @@ icon: mdi:home
 type: custom:grid-layout
 layout:
   grid-template-columns: "minmax(0, 500px)"
-  justify-content: center
+  place-content: start center  # layout-card only applies grid-*, place-items and place-content
   padding: 0 8px 110px 8px
   mediaquery:
     "(min-width: 900px)":
       grid-template-columns: "minmax(0, 1100px)"
+      place-content: start center  # media queries replace the base layout, so centring is repeated here
       padding: 0 24px 110px 24px
 cards:
   # ========================================================
@@ -22,6 +23,10 @@ cards:
   - !include ../popups/weather.yaml
   - !include ../popups/todo.yaml
   - !include ../popups/doorbell.yaml
+  - !include ../popups/main_door.yaml
+  - !include ../popups/alarm.yaml
+  - !include ../popups/guest_wifi.yaml
+  - !include ../popups/meds.yaml
   - type: vertical-stack
     cards: !include_dir_list ../popups/rooms
   - type: vertical-stack

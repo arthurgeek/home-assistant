@@ -1,0 +1,5 @@
+# Markers of the swipe carousels (Casa's ACs and events, Superior's kids' rooms): same look everywhere
+"--pagination-bullet-active-background-color": "var(--catppuccin-mauve, #c6a0f6)"
+"--pagination-bullet-background-color": "var(--catppuccin-surface1, #494d64)"
+"--pagination-bullet-border": none
+"--pagination-bullet-distance": 6px

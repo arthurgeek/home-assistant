@@ -5,45 +5,21 @@ name: Mídia & Som
 icon: mdi:speaker-multiple
 bg_blur: 16
 cards:
+  - type: custom:streamline-card
+    template: sonos
   - type: custom:bubble-card
     card_type: separator
-    name: Sonos Multi-Room
-    icon: mdi:speaker
-
-  - type: custom:sonos-card
-    mediaTitleRegexToReplace: '^(aac://)?(https?://)?[0-9.]+:8097/source/.*$'
-    mediaTitleReplacement: ''
-    entities:
-      - media_player.living_room
-      - media_player.unnamed_room
-      - media_player.kids_bedroom_kids_bedroom
-    sections:
-      - player
-      - grouping
-      - volumes
-      - media browser
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Players da Casa
+    name: Outros
     icon: mdi:television-play
-
-  - type: custom:mini-media-player
-    entity: media_player.living_room
-    name: Sala
-    artwork: cover
-    hide:
-      power: true
-
-  - type: custom:mini-media-player
-    entity: media_player.unnamed_room
-    name: Sonos Move
-    artwork: cover
-    hide:
-      power: true
-
-  - type: custom:mini-media-player
-    entity: media_player.tv_samsung_6_series_55
-    name: TV Sala de Estar
-    icon: mdi:television
-    artwork: cover
+  - type: custom:streamline-card
+    template: speaker_card
+    variables:
+      entity: media_player.dining_room_echo_pop_ma
+      name: Echo Pop
+      icon: mdi:speaker-message
+  - type: custom:streamline-card
+    template: speaker_card
+    variables:
+      entity: media_player.samsung_6_series_55_ue55mu6179
+      name: TV
+      icon: mdi:television

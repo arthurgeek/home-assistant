@@ -136,4 +136,4 @@ template:
                 {% set ns.items = ns.items + [{'summary': e.summary, 'start': e.start, 'end': e.end, 'all_day': all_day}] %}
               {% endif %}
             {% endfor %}
-            {{ ns.items[:10] }}
+            {{ ns.items[:40] }}  # a busy week, for the 7-day events carousel on Casa

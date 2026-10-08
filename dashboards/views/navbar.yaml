@@ -38,6 +38,10 @@ items:
         tap_action:
           action: navigate
           navigation_path: "#todo"
+      - icon: mdi:qrcode
+        tap_action:
+          action: navigate
+          navigation_path: "#guest_wifi"
       - icon: mdi:menu
         tap_action:
           action: toggle-menu

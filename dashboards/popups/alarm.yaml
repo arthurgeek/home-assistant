@@ -1,0 +1,69 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#alarm'
+entity: alarm_control_panel.home
+name: Alarme
+icon: mdi:shield-home
+button_type: state
+bg_blur: 16
+cards:
+  # Securitas: Casa = partial_day, Fora = total
+  - type: grid
+    columns: 3
+    square: false
+    cards:
+      - type: custom:button-card
+        template: mode_button
+        entity: alarm_control_panel.home
+        variables:
+          icon: mdi:shield-home
+          label: Casa
+          mode: armed_home
+        tap_action:
+          action: perform-action
+          perform_action: alarm_control_panel.alarm_arm_home
+          target:
+            entity_id: alarm_control_panel.home
+          confirmation:
+            text: Armar o alarme em modo Casa?
+          haptic: success
+      - type: custom:button-card
+        template: mode_button
+        entity: alarm_control_panel.home
+        variables:
+          icon: mdi:shield-lock
+          label: Fora
+          mode: armed_away
+        tap_action:
+          action: perform-action
+          perform_action: alarm_control_panel.alarm_arm_away
+          target:
+            entity_id: alarm_control_panel.home
+          confirmation:
+            text: Armar o alarme em modo Fora?
+          haptic: success
+      - type: custom:button-card
+        template: mode_button
+        entity: alarm_control_panel.home
+        variables:
+          icon: mdi:shield-off-outline
+          label: Desarmar
+          mode: disarmed
+        tap_action:
+          action: perform-action
+          perform_action: alarm_control_panel.alarm_disarm
+          target:
+            entity_id: alarm_control_panel.home
+          confirmation:
+            text: Desarmar o alarme?
+          haptic: success
+  - type: custom:streamline-card
+    template: activity_log
+    grid_options:
+      rows: auto
+    variables:
+      title: Atividade
+      hours: 72
+      entities:
+        - alarm_control_panel.home
+        - event.living_room_alarm_activity

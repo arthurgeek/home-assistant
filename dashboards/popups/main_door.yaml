@@ -1,0 +1,30 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#main_door'
+name: Porta da sala
+icon: mdi:door
+button_type: name
+bg_blur: 16
+cards:
+  - type: custom:button-card
+    template: tile
+    variables:
+      icon: mdi:lock-open-variant-outline
+      label: Destrancar
+      sublabel: Porta da sala
+      accent: "var(--catppuccin-peach, #f5a97f)"
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    tap_action:
+      action: perform-action
+      perform_action: button.press
+      target:
+        entity_id: button.main_door_unlock
+      confirmation:
+        text: Destrancar a porta?
+      haptic: success
+  # UniFi Access log (the door has no position sensor)
+  - type: custom:button-card
+    template: door_log
+    entity: sensor.main_door_log

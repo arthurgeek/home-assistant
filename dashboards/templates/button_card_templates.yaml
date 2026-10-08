@@ -426,7 +426,9 @@ person_card:
     grid:
       - grid-template-areas: "'avatar status' 'chips chips' 'ago ago'"
       - grid-template-columns: 68px 1fr
-      - grid-template-rows: 68px 1fr min-content
+      # sized by its content, with fixed gaps between avatar, chips and "há …"
+      - grid-template-rows: 68px auto auto
+      - row-gap: 12px
       - column-gap: 12px
     custom_fields:
       avatar:
@@ -481,7 +483,7 @@ person_card:
         }[presence];
         if (!text) text = p?.state === 'home' ? 'Em casa' : (zone || 'Fora');
         return `<div style="font-size: 15px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${p?.attributes?.friendly_name || ''}</div>
-                <div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">${text}</div>`;
+                <div style="font-size: 13px; margin-top: 2px; color: var(--catppuccin-subtext0, #a5adcb);">${text}</div>`;
       ]]]
     chips: |
       [[[
@@ -535,6 +537,13 @@ tile:
     accent: "var(--catppuccin-mauve, #c6a0f6)"
     active: false
     animation: none
+    # Optional quick-action button on the right (the tile's own tap opens its pop-up): a tap_action
+    # config, and its icon. Without an action the button is hidden.
+    action: null
+    action_icon: mdi:gesture-tap
+    # Filled (in action_accent, else the tile's accent), e.g. a dose already taken
+    action_active: false
+    action_accent: null
   show_name: false
   show_icon: false
   show_label: false
@@ -542,17 +551,22 @@ tile:
   styles:
     card:
       - height: 100%
-      - padding: 0 12px 0 8px
+      - padding: 14px 16px  # clear of the 24px rounded corners
       - animation: "[[[ return variables.animation ]]]"
+    # Icon and quick button on top, text across the whole tile below
     grid:
-      - grid-template-areas: "'badge text'"
-      - grid-template-columns: 58px 1fr
+      - grid-template-areas: "'badge action' 'text text'"
+      - grid-template-columns: 1fr auto
+      - grid-template-rows: auto 1fr
+      - row-gap: 4px
     custom_fields:
       badge:
         - justify-self: start
       text:
         - justify-self: stretch
         - min-width: 0
+      action:
+        - display: "[[[ return variables.action ? 'block' : 'none' ]]]"
   # Own markup for icon and text: button-card's icon sizes wrongly in hidden tabs, and its label/name
   # styling didn't match the other custom-markup cards.
   custom_fields:
@@ -560,33 +574,286 @@ tile:
       [[[
         const bg = variables.active ? variables.accent : 'rgba(73, 77, 100, 0.6)';
         const fg = variables.active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
-        return `<div style="width: 46px; height: 46px; border-radius: 50%; background: ${bg}; display: flex; align-items: center; justify-content: center;">
-          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 22px; color: ${fg};"></ha-icon></div>`;
+        return `<div style="width: 36px; height: 36px; border-radius: 50%; background: ${bg}; display: flex; align-items: center; justify-content: center;">
+          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 18px; color: ${fg};"></ha-icon></div>`;
       ]]]
     text: |
       [[[
         const line = 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
         return `<div style="text-align: left;">
           <div style="font-size: 15px; font-weight: 600; color: var(--catppuccin-text, #cad3f5); ${line}">${variables.label}</div>
-          <div style="font-size: 12px; color: var(--catppuccin-subtext0, #a5adcb); ${line}">${variables.sublabel}</div></div>`;
+          <div style="font-size: 12px; margin-top: 3px; color: var(--catppuccin-subtext0, #a5adcb); ${line}">${variables.sublabel}</div></div>`;
+      ]]]
+    action:
+      card:
+        type: custom:paper-buttons-row
+        buttons:
+          - icon: "[[[ return variables.action_icon ]]]"
+            layout: icon
+            ripple: none
+            tap_action: "[[[ return variables.action ]]]"
+            styles:
+              button:
+                width: 34px
+                height: 34px
+                padding: 0
+                border-radius: 50%
+                background: "[[[ return variables.action_active ? (variables.action_accent || variables.accent) : 'rgba(73, 77, 100, 0.85)' ]]]"
+              icon:
+                color: "[[[ return variables.action_active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                --mdc-icon-size: 18px
+
+# ==========================================================================
+# Mode button: icon over label, filled while the entity is in `mode` (alarm pop-up)
+# ==========================================================================
+mode_button:
+  template:
+    - base_card
+  variables:
+    icon: mdi:help
+    label: ""
+    mode: ""
+    accent: "var(--catppuccin-mauve, #c6a0f6)"
+  show_name: false
+  show_icon: false
+  show_state: false
+  show_label: false
+  styles:
+    card:
+      - height: 88px
+      - padding: 0
+      - background: >-
+          [[[ return entity?.state === variables.mode ? variables.accent : 'rgba(54, 58, 79, 0.7)' ]]]
+    grid:
+      - grid-template-areas: "'content'"
+  custom_fields:
+    content: |
+      [[[
+        const on = entity?.state === variables.mode;
+        const fg = on ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
+        return `<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; color: ${fg};">
+          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 26px;"></ha-icon>
+          <div style="font-size: 14px; font-weight: 600;">${variables.label}</div></div>`;
       ]]]
 
 # ==========================================================================
-# Agenda carousel: next events as swipeable pages (CSS scroll-snap) + dots.
-# Reads sensor.events_today.attributes.upcoming.
+# Meds heatmap: 13 weeks of doses from sensor.meds_log, each day split into morning (top) and evening (bottom)
+# ==========================================================================
+meds_heatmap:
+  template:
+    - base_card
+  show_name: false
+  show_icon: false
+  show_state: false
+  show_label: false
+  tap_action:
+    action: none
+  styles:
+    grid:
+      - grid-template-areas: "'map'"
+  custom_fields:
+    map: |
+      [[[
+        const days = entity?.attributes?.days || {};
+        const pad = (n) => String(n).padStart(2, '0');
+        const key = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const logged = Object.keys(days).sort();
+        const first = logged[0];
+        const now = new Date();
+        const today = key(now);
+        const due = { morning: 9, evening: 21 };
+        const status = (k, dose) => {
+          if (days[k]?.[dose]) return 'taken';
+          if (!first || k < first || k > today) return 'none';
+          if (k === today) return now.getHours() >= due[dose] ? 'pending' : 'none';
+          return 'missed';
+        };
+        const color = { taken: '#a6da95', missed: 'rgba(237, 135, 150, 0.75)', pending: '#eed49f', none: 'rgba(202, 211, 245, 0.07)' };
+        // A day: top half = 09:00 dose, bottom half = 21:00 dose
+        const half = (m, e, title = '') => `<div title="${title}" style="width: 18px; height: 20px; display: flex; flex-direction: column; gap: 3px;">
+          <div style="flex: 1; border-radius: 4px 4px 1px 1px; background: ${color[m]};"></div>
+          <div style="flex: 1; border-radius: 1px 1px 4px 4px; background: ${color[e]};"></div></div>`;
+        // Columns are weeks (Monday first), the last one is this week
+        const start = new Date(now); start.setHours(12, 0, 0, 0);
+        start.setDate(start.getDate() - ((start.getDay() + 6) % 7) - 12 * 7);
+        let cols = '';
+        let taken30 = 0, due30 = 0;
+        const since30 = new Date(now); since30.setDate(since30.getDate() - 30);
+        for (let w = 0; w < 13; w++) {
+          let cells = '';
+          for (let d = 0; d < 7; d++) {
+            const day = new Date(start); day.setDate(start.getDate() + w * 7 + d);
+            const k = key(day);
+            const m = status(k, 'morning'), e = status(k, 'evening');
+            if (day >= since30) for (const s of [m, e]) { if (s === 'taken') taken30++; if (s === 'taken' || s === 'missed') due30++; }
+            cells += half(m, e, k);
+          }
+          cols += `<div style="display: flex; flex-direction: column; gap: 4px;">${cells}</div>`;
+        }
+        // Streak: complete days in a row, counting back from the last complete one
+        let streak = 0;
+        const d = new Date(now);
+        if (!(days[today]?.morning && days[today]?.evening)) d.setDate(d.getDate() - 1);
+        while (days[key(d)]?.morning && days[key(d)]?.evening) { streak++; d.setDate(d.getDate() - 1); }
+        const weekdays = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((l) => `<div style="height: 20px; line-height: 20px;">${l}</div>`).join('');
+        const legend = (c, t) => `<span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: ${c};"></span>${t}</span>`;
+        return `<div style="text-align: left; color: var(--catppuccin-text, #cad3f5);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+            <div style="font-size: 16px; font-weight: 600;">Histórico</div>
+            <div style="font-size: 12px; color: var(--catppuccin-subtext0, #a5adcb);">30 dias: ${taken30}/${due30} · sequência ${streak} ${streak === 1 ? 'dia' : 'dias'}</div>
+          </div>
+          <div style="display: flex; gap: 4px; justify-content: center;">
+            <div style="display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: var(--catppuccin-subtext0, #a5adcb); margin-right: 2px;">${weekdays}</div>
+            ${cols}
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: center; margin-top: 12px; font-size: 11px; color: var(--catppuccin-subtext0, #a5adcb);">
+            ${legend(color.taken, 'tomado')}${legend(color.missed, 'esquecido')}${legend(color.pending, 'pendente')}
+          </div>
+          <div style="display: flex; gap: 6px; justify-content: center; align-items: center; margin-top: 8px; font-size: 11px; color: var(--catppuccin-subtext0, #a5adcb);">
+            ${half('taken', 'none')}<div style="line-height: 1.3; text-align: left;">manhã 09:00<br>noite 21:00</div>
+          </div></div>`;
+      ]]]
+
+# ==========================================================================
+# Light tile: a switch as a tile, named after its HA area (+ optional detail); tap toggles
+# ==========================================================================
+light_tile:
+  template: tile
+  variables:
+    detail: ""
+    icon: "[[[ return entity?.state === 'on' ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline' ]]]"
+    label: "[[[ return entity?.state === 'on' ? 'Acesa' : entity?.state === 'off' ? 'Apagada' : '--' ]]]"
+    sublabel: |
+      [[[
+        const reg = hass.entities?.[entity?.entity_id];
+        const areaId = reg?.area_id || hass.devices?.[reg?.device_id]?.area_id;
+        const area = hass.areas?.[areaId]?.name || '';
+        return [area, variables.detail].filter(Boolean).join(' · ');
+      ]]]
+    active: "[[[ return entity?.state === 'on' ]]]"
+    accent: "var(--catppuccin-yellow, #eed49f)"
+  styles:
+    card:
+      - height: 110px  # the tiles' height on Casa
+  custom_fields:
+    # the icon is the switch; tapping the rest of the card opens the entity
+    badge:
+      card:
+        type: custom:paper-buttons-row
+        buttons:
+          - entity: "[[[ return entity.entity_id ]]]"
+            icon: "[[[ return variables.icon ]]]"
+            layout: icon
+            ripple: none
+            tap_action:
+              action: toggle
+              haptic: light
+            styles:
+              button:
+                width: 36px
+                height: 36px
+                padding: 0
+                border-radius: 50%
+                background: "[[[ return variables.active ? variables.accent : 'rgba(73, 77, 100, 0.6)' ]]]"
+              icon:
+                color: "[[[ return variables.active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                --mdc-icon-size: 18px
+  tap_action:
+    action: more-info
+
+# ==========================================================================
+# Main door access log (sensor.main_door_log): when, who, how; denials in red. Like UniFi Access's own log.
+# ==========================================================================
+door_log:
+  template:
+    - base_card
+  show_name: false
+  show_icon: false
+  show_state: false
+  tap_action:
+    action: none
+  styles:
+    grid:
+      - grid-template-areas: "'log'"
+    custom_fields:
+      log:
+        - justify-self: stretch
+        - min-width: 0
+  custom_fields:
+    log: |
+      [[[
+        const entries = entity?.attributes?.entries || [];
+        const how = { REMOTE_THROUGH_UAH: ['mdi:home-assistant', 'Home Assistant'], NFC: ['mdi:card-account-details-outline', 'cartão'],
+                      PIN_CODE: ['mdi:dialpad', 'senha'], MOBILE_TAP: ['mdi:cellphone-nfc', 'celular'], MOBILE_UNLOCK: ['mdi:cellphone', 'app'],
+                      FACE: ['mdi:face-recognition', 'rosto'], QR_CODE: ['mdi:qrcode', 'QR code'], BUTTON: ['mdi:gesture-tap-button', 'botão'] };
+        const pad = (n) => String(n).padStart(2, '0');
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const day = (d) => { const d0 = new Date(d); d0.setHours(0, 0, 0, 0); const n = Math.round((today - d0) / 86400000);
+          return n === 0 ? 'Hoje' : n === 1 ? 'Ontem' : d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' }); };
+        if (!entries.length) return `<div style="font-size: 14px; color: var(--catppuccin-subtext0, #a5adcb); text-align: left;">Nenhum acesso registrado ainda</div>`;
+        let last = '';
+        const rows = entries.map((e) => {
+          const d = new Date(e.time);
+          const [icon, text] = how[e.how] || ['mdi:key-variant', (e.how || '').toLowerCase()];
+          const head = day(d) !== last ? `<div style="font-size: 13px; font-weight: 600; color: var(--catppuccin-subtext0, #a5adcb); margin: ${last ? '12px' : '0'} 0 4px;">${(last = day(d))}</div>` : '';
+          const color = e.granted ? 'var(--catppuccin-text, #cad3f5)' : 'var(--catppuccin-red, #ed8796)';
+          return `${head}<div style="display: flex; align-items: center; gap: 12px; padding: 6px 0;">
+            <div style="font-size: 14px; font-variant-numeric: tabular-nums; color: var(--catppuccin-subtext0, #a5adcb); width: 42px;">${pad(d.getHours())}:${pad(d.getMinutes())}</div>
+            <div style="flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: ${color}; white-space: normal;">${e.who || '--'}${e.granted ? '' : ' · negado'}</div>
+            <ha-icon icon="${icon}" title="${text}" style="--mdc-icon-size: 20px; color: var(--catppuccin-overlay2, #939ab7);"></ha-icon></div>`;
+        }).join('');
+        return `<div style="text-align: left;">
+          <div style="font-size: 16px; font-weight: 600; color: var(--catppuccin-text, #cad3f5); margin-bottom: 8px;">Atividade</div>${rows}</div>`;
+      ]]]
+
+# ==========================================================================
+# Events on Casa: a page per day (of the next 7) that has events, all of them; the list scrolls vertically
+# when they don't fit. The card itself is transparent: the frame is drawn 26px short of the area, so the
+# markers sit below it like the AC carousel's (css-swipe-card) and the frame ends level with the AC cards.
 # ==========================================================================
 events_carousel:
   template:
     - base_card
     - anim
   entity: sensor.events_today
+  # the ripple (hover/tap highlight) is square; other cards clip it with overflow: hidden, this one can't
+  # (its markers sit below the frame), so it gets the frame's shape and stops above the markers
+  # Text on the dashboard's type scale (as the tiles: title 15px, secondary 12-13px), the same at every width
+  extra_styles: |
+    ha-ripple { inset: 0 0 26px 0 !important; height: auto !important; border-radius: 24px; overflow: hidden; }
+    .ev-label { font-size: 13px; }
+    .ev-date { font-size: 30px; margin-bottom: 8px; }
+    .ev-rows { gap: 8px; }
+    .ev-when { font-size: 12px; }
+    .ev-title { font-size: 15px; }
+  # while_music: true = only while a speaker plays, false = only while none plays, unset = always (Casa shows the
+  # agenda in a different place on desktop depending on the media card)
+  variables:
+    while_music: null
+  triggers_update:
+    - media_player.living_room_speaker
+    - media_player.kids_bedroom_speaker
+    - media_player.sonos_move_speaker
   show_name: false
   show_icon: false
   show_state: false
+  tap_action:
+    action: navigate
+    navigation_path: "#calendar"
   styles:
     card:
+      - display: |
+          [[[
+            if (variables.while_music == null) return 'block';
+            const playing = ['living_room', 'kids_bedroom', 'sonos_move']
+              .some((k) => states[`media_player.${k}_speaker`]?.state === 'playing');
+            return playing === variables.while_music ? 'block' : 'none';
+          ]]]
       - height: 100%
-      - padding: 16px 0 12px 0
+      - padding: 0
+      - background: none
+      - border: none
+      - overflow: visible
     grid:
       - grid-template-areas: "'body'"
       - grid-template-rows: 1fr
@@ -594,57 +861,80 @@ events_carousel:
       body:
         - height: 100%
         - width: 100%
-        - overflow: hidden
+        - min-width: 0
   custom_fields:
     body: |
       [[[
-        const events = (entity?.attributes?.upcoming || []).slice(0, 5);
-        if (!events.length) {
-          return `<div style="height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 0 16px; text-align: left;">
-            <div style="font-size: 20px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">Sem compromissos</div>
-            <div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">nos próximos 7 dias</div></div>`;
-        }
         const parse = (v) => v.includes('T') ? new Date(v) : new Date(...v.split('-').map((n, i) => i === 1 ? n - 1 : +n));
         const pad = (n) => String(n).padStart(2, '0');
         const hm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
         const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-        const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const pages = events.map((e) => {
-          const s = parse(e.start), en = parse(e.end);
-          const d0 = new Date(s); d0.setHours(0, 0, 0, 0);
-          const diff = Math.round((d0 - today) / 86400000);
-          const day = diff <= 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : days[s.getDay()];
-          const when = e.all_day ? 'Dia inteiro' : `${hm(s)} · ${hm(en)}`;
-          return `<div class="ev-page" style="flex: 0 0 100%; scroll-snap-align: start; box-sizing: border-box; padding: 0 16px; display: flex; flex-direction: column; text-align: left;">
-            <div style="font-size: 14px; color: var(--catppuccin-subtext0, #a5adcb);">${day}</div>
-            <div style="font-size: 30px; font-weight: 300; color: var(--catppuccin-text, #cad3f5); line-height: 1.1;">${s.getDate()} ${months[s.getMonth()]}</div>
-            <div style="flex: 1;"></div>
-            <div style="font-size: 13px; color: var(--catppuccin-mauve, #c6a0f6); font-weight: 600;">${when}</div>
-            <div style="font-size: 14px; font-weight: 600; line-height: 1.25; color: var(--catppuccin-text, #cad3f5); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;">${e.summary}</div>
+        const weekdays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const events = entity?.attributes?.upcoming || [];
+        const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+        // a page per day of the next 7 that has events (multi-day events show on every day they cover)
+        const byDay = [];
+        for (let d = 0; d < 7; d++) {
+          const start = new Date(day0); start.setDate(start.getDate() + d);
+          const end = new Date(start); end.setDate(end.getDate() + 1);
+          const items = events.filter((e) => parse(e.start) < end && parse(e.end) > start);
+          if (items.length) byDay.push({ d, start, items });
+        }
+        const frame = 'height: calc(100% - 26px); box-sizing: border-box; border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); background: rgba(36, 39, 58, 0.7); overflow: hidden;';
+        if (!byDay.length) {
+          return `<div style="${frame} display: flex; flex-direction: column; justify-content: center; padding: 0 16px; text-align: left;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">Sem compromissos</div>
+            <div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">nos próximos 7 dias</div></div>`;
+        }
+        const pages = byDay.map(({ d, start, items }) => {
+          const label = d === 0 ? 'Hoje' : d === 1 ? 'Amanhã' : weekdays[start.getDay()];
+          // time above, the title wrapping over as many lines as it needs: readable, never cut
+          const rows = items.map((e) => {
+            const s = parse(e.start);
+            const when = e.all_day ? 'Dia inteiro' : s < start ? 'Até ' + hm(parse(e.end)) : hm(s);
+            return `<div style="min-width: 0;">
+              <div class="ev-when" style="font-weight: 600; color: var(--catppuccin-mauve, #c6a0f6);">${when}</div>
+              <div class="ev-title" style="font-weight: 600; line-height: 1.3; color: var(--catppuccin-text, #cad3f5); white-space: normal; overflow-wrap: anywhere;">${e.summary}</div></div>`;
+          }).join('');
+          return `<div class="ev-page" style="flex: 0 0 100%; scroll-snap-align: start; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; text-align: left; min-width: 0;">
+            <div class="ev-label" style="color: var(--catppuccin-subtext0, #a5adcb);">${label}</div>
+            <div class="ev-date" style="font-weight: 300; color: var(--catppuccin-text, #cad3f5); line-height: 1.1;">${start.getDate()} ${months[start.getMonth()]}</div>
+            <div class="ev-rows" style="flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column;">${rows}</div>
           </div>`;
         }).join('');
-        const dots = events.length > 1
-          ? `<div style="display: flex; justify-content: center; gap: 6px; padding-top: 10px;">${events.map((_, i) =>
-              `<span class="ev-dot" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? 'var(--catppuccin-mauve, #c6a0f6)' : 'var(--catppuccin-surface1, #494d64)'};"></span>`).join('')}</div>`
+        // markers as css-swipe-card draws the AC carousel's: 10px dots 10px apart, the active one 12px and mauve
+        const dots = byDay.length > 1
+          ? `<div id="ev-dots" style="height: 26px; display: flex; justify-content: center; align-items: center; gap: 10px;">${byDay.map((_, i) =>
+              `<span class="ev-dot" data-i="${i}" style="border-radius: 50%; cursor: pointer; transition: all 0.3s ease; width: ${i ? '10px' : '12px'}; height: ${i ? '10px' : '12px'}; background: ${i ? 'var(--catppuccin-surface1, #494d64)' : 'var(--catppuccin-mauve, #c6a0f6)'};"></span>`).join('')}</div>`
           : '';
         setTimeout(() => {
           const root = this.shadowRoot;
           const track = root && root.querySelector('#ev-track');
           if (!track || track.dataset.bound) return;
           track.dataset.bound = '1';
-          track.addEventListener('scroll', () => {
-            const i = Math.round(track.scrollLeft / track.clientWidth);
-            root.querySelectorAll('.ev-dot').forEach((d, k) => {
-              d.style.background = k === i ? 'var(--catppuccin-mauve, #c6a0f6)' : 'var(--catppuccin-surface1, #494d64)';
+          const mark = (i) => root.querySelectorAll('.ev-dot').forEach((d, k) => {
+            d.style.width = d.style.height = k === i ? '12px' : '10px';
+            d.style.background = k === i ? 'var(--catppuccin-mauve, #c6a0f6)' : 'var(--catppuccin-surface1, #494d64)';
+          });
+          track.addEventListener('scroll', () => mark(Math.round(track.scrollLeft / track.clientWidth)), { passive: true });
+          const bar = root.querySelector('#ev-dots');
+          if (bar) {
+            // taps on the markers change page, they don't open the calendar pop-up
+            for (const t of ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend']) {
+              bar.addEventListener(t, (ev) => ev.stopPropagation());
+            }
+            bar.addEventListener('click', (ev) => {
+              const dot = ev.target.closest('.ev-dot');
+              if (dot) track.scrollTo({ left: +dot.dataset.i * track.clientWidth, behavior: 'smooth' });
             });
-          }, { passive: true });
+          }
         }, 0);
         return `<div style="height: 100%; display: flex; flex-direction: column;">
-          <div id="ev-track" style="flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;">${pages}</div>
+          <div id="ev-track" style="${frame} display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;">${pages}</div>
           ${dots}</div>`;
       ]]]
 
+# ==========================================================================
 # ==========================================================================
 # Live activity row (appliance running, vacuum cleaning, now playing)
 # ==========================================================================

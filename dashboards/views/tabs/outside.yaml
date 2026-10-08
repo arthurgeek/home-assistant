@@ -2,7 +2,7 @@ type: custom:layout-card
 layout_type: custom:grid-layout
 layout:
   grid-template-columns: 1fr 1fr
-  grid-template-rows: auto 70px
+  grid-template-rows: auto 110px 150px  # the street lights tile: 110px, as the tiles on Casa
   grid-gap: 10px
   margin: 8px 0 0 0
   grid-template-areas: |
@@ -11,10 +11,12 @@ layout:
     "garage laundry"
   mediaquery:
     "(min-width: 900px)":
-      grid-template-columns: 2fr 1fr
-      grid-template-rows: auto
+      grid-template-columns: 2fr 1fr 1fr
+      # the street lights tile keeps its 110px beside the camera instead of stretching to the camera's height
+      grid-template-rows: 110px auto
       grid-template-areas: |
-        "camera outside"
+        "camera street street"
+        "camera garage laundry"
 cards:
   - type: vertical-stack
     view_layout:
@@ -27,17 +29,15 @@ cards:
     view_layout:
       grid-area: street
     entity: light.street_lights
+    tap_action:
+      action: none
     variables:
       icon: mdi:outdoor-lamp
       label: "[[[ return entity?.state === 'on' ? 'Acesas' : entity?.state === 'off' ? 'Apagadas' : '--' ]]]"
-      sublabel: Luzes externas
+      sublabel: Rua · automático
       active: "[[[ return entity?.state === 'on' ]]]"
       accent: "var(--catppuccin-yellow, #eed49f)"
       animation: "[[[ return entity?.state === 'on' ? 'glow 3s ease-in-out infinite' : 'none' ]]]"
-    tap_action:
-      action: toggle
-    hold_action:
-      action: more-info
 
   - type: custom:button-card
     template: room_card_v2

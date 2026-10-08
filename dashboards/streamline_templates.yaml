@@ -165,3 +165,79 @@ history_graph:
     card_mod:
       style: |-
         ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); }
+
+# Logbook of recent activity, styled like the other pop-up sections. Variables: title, hours, entities.
+# Instances set grid_options rows: auto, since Bubble sizes pop-up cards from the instance.
+activity_log:
+  card:
+    type: logbook
+    title: "[[title]]"
+    hours_to_show: "[[hours]]"
+    target:
+      entity_id: "[[entities]]"
+    card_mod:
+      style: |-
+        ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); }
+        .card-header { font-size: 16px; font-weight: 600; padding: 16px 16px 0; }
+
+# A media player as a Bubble media card. Variables: entity, name, icon, layout (normal | large).
+speaker_card:
+  default:
+    - layout: normal
+  card:
+    type: custom:bubble-card
+    card_type: media-player
+    entity: "[[entity]]"
+    name: "[[name]]"
+    icon: "[[icon]]"
+    cover_background: true
+    card_layout: "[[layout]]"
+
+# One position of the Casa AC carousel: the AC at index `slot` of sensor.ac_order (on ones first), picked
+# from `acs`, the list of AC cards. Re-evaluated as states change, so the carousel reorders itself.
+ac_slot:
+  card:
+    type: custom:button-card
+    template: ac_card
+    variables_javascript: |-
+      const climate = states['sensor.ac_order']?.attributes?.order?.[variables.slot];
+      const card = variables.acs.find((a) => a.variables.climate === climate) || variables.acs[variables.slot];
+      return card.variables;
+
+# The Sonos card (Casa while music plays, and the media pop-up), on the Music Assistant players: they carry the
+# art and title (e.g. Spotify via MA) and group via MA. Album art blurred behind the controls.
+sonos:
+  card:
+    type: custom:sonos-card
+    # take the Music Assistant players (the card defaults to Sonos-platform ones) and search through MA;
+    # exclusive with showNonSonosPlayers / useMusicAssistant
+    entityPlatform: music_assistant
+    entities:
+      - media_player.living_room_ma
+      - media_player.kids_bedroom_ma
+      - media_player.sonos_move_ma
+    # player, choose a playing group, group/ungroup, the queue (mass_queue), search (via MA), browse,
+    # per-speaker volumes
+    sections:
+      - player
+      - groups
+      - grouping
+      - queue
+      - search
+      - media browser
+      - volumes
+    adjustVolumeRelativeToMainPlayer: true
+    # MA fetches Spotify results 10 per request, one request after another, and Spotify throttles bursts: 10
+    # results is one request per type, and tracks only by default (the card otherwise searches 5 types)
+    search:
+      searchLimit: 10
+      defaultMediaType: track
+      autoSearchDebounceMs: 200  # the card waits 1 s after the last key by default
+    player:
+      artworkAsBackground: true
+      artworkAsBackgroundBlur: 10
+      controlsAndHeaderBackgroundOpacity: 0.7
+    card_mod:
+      style: |-
+        ha-card { border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); overflow: hidden;
+                  box-shadow: none; background: rgba(36, 39, 58, 0.7); }

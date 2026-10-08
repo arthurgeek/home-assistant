@@ -1,8 +1,9 @@
 type: custom:layout-card
 layout_type: custom:grid-layout
 layout:
-  grid-template-columns: 1fr 1fr
-  grid-template-rows: 150px 186px 70px 70px 70px auto
+  # minmax(0, 1fr): a carousel's natural width (all its pages) must not widen its column
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  grid-template-rows: auto auto 110px 110px 110px auto
   grid-gap: 10px
   margin: 8px 0 0 0
   grid-template-areas: |
@@ -10,24 +11,30 @@ layout:
     "ac ac"
     "events door"
     "events alarm"
-    "events todo"
+    "todo meds"
     "feed feed"
   mediaquery:
     "(min-width: 900px)":
-      grid-template-columns: 1fr 1fr 1fr 1fr
-      grid-template-rows: 186px 70px 70px 70px auto
+      grid-template-columns: repeat(4, minmax(0, 1fr))
+      # media + ACs on the left half; people and tiles beside them, the events card taking the remaining height
+      # the events row (4) is the flexible one, so a tall media + ACs column grows only it
+      # row 1: the whole AC carousel (160px card, as tall as the people cards, + 26px of markers), so the markers
+      # stay with the AC card and get the row gap below them; row 4: at least the markers of the agenda under the
+      # ACs (desktop without music)
+      grid-template-rows: 186px 110px 110px minmax(16px, 1fr) auto
       grid-template-areas: |
         "ac ac arthur suellen"
-        "events door feed feed"
-        "events alarm feed feed"
-        "events todo feed feed"
-        ". . feed feed"
+        "ac ac door alarm"
+        "ac ac todo meds"
+        "ac ac events events"
+        "feed feed feed feed"
 cards:
   # --- People ---------------------------------------------------------------
   - type: custom:button-card
     template: person_card
     view_layout:
       grid-area: arthur
+      place-self: start stretch  # its natural 160px, level with the AC card, not the taller desktop row
     variables:
       person: person.arthur
       presence: input_select.presence_state_arthur
@@ -38,6 +45,7 @@ cards:
     template: person_card
     view_layout:
       grid-area: suellen
+      place-self: start stretch  # its natural 160px, level with the AC card, not the taller desktop row
     variables:
       person: person.suellen
       presence: input_select.presence_state_suellen
@@ -49,41 +57,93 @@ cards:
     template: tile
     view_layout:
       grid-area: door
-    entity: binary_sensor.main_door
+    # last access from the UniFi Access log (the door has no position sensor)
+    entity: sensor.main_door_log
     variables:
-      icon: "[[[ return entity?.state === 'on' ? 'mdi:door-open' : 'mdi:door-closed-lock' ]]]"
-      label: "[[[ return entity?.state === 'on' ? 'Aberta' : entity?.state === 'off' ? 'Fechada' : '--' ]]]"
-      sublabel: Porta da sala
-      active: "[[[ return entity?.state === 'on' ]]]"
+      icon: mdi:door-closed-lock
+      label: |
+        [[[
+          const t = new Date(entity?.state);
+          if (isNaN(t)) return 'Trancada';
+          const min = Math.floor((Date.now() - t) / 60000);
+          if (min < 1) return 'Agora';
+          if (min < 60) return `há ${min} min`;
+          const h = Math.floor(min / 60);
+          return h < 24 ? `há ${h} h` : t.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+        ]]]
+      sublabel: "[[[ const e = entity?.attributes?.entries?.[0]; return e ? `Porta da sala · ${e.who}` : 'Porta da sala' ]]]"
       accent: "var(--catppuccin-peach, #f5a97f)"
-      animation: "[[[ return entity?.state === 'on' ? 'pulse 2s ease-in-out infinite' : 'none' ]]]"
+      action_icon: mdi:lock-open-variant
+      # call-service, not perform-action: the quick button is a paper-buttons-row
+      action:
+        action: call-service
+        service: button.press
+        service_data:
+          entity_id: button.main_door_unlock
+        confirmation:
+          text: Destrancar a porta?
+        haptic: success
     tap_action:
-      action: perform-action
-      perform_action: button.press
-      target:
-        entity_id: button.main_door_unlock
-      confirmation:
-        text: Destrancar a porta?
-      haptic: success
-    hold_action:
       action: navigate
       navigation_path: "#main_door"
 
-  # --- ACs (swipe) ---------------------------------------------------------------
+  # --- Now playing (while music plays) above the ACs (swipe) ---------------------
   - type: vertical-stack
     view_layout:
       grid-area: ac
     cards:
+      # Now playing: first on Casa while any speaker plays (the card follows the playing group); hidden otherwise
+      - type: conditional
+        conditions:
+          - condition: or
+            conditions: &playing
+              - condition: state
+                entity: media_player.living_room_speaker
+                state: playing
+              - condition: state
+                entity: media_player.kids_bedroom_speaker
+                state: playing
+              - condition: state
+                entity: media_player.sonos_move_speaker
+                state: playing
+        card:
+          type: custom:streamline-card
+          template: sonos
       - !include home_acs.yaml
 
   # --- Agenda (swipe) --------------------------------------------------------------
+  # Phone: its own cell
   - type: custom:button-card
     template: events_carousel
     view_layout:
       grid-area: events
-    tap_action:
-      action: navigate
-      navigation_path: "#calendar"
+      show:
+        mediaquery: "(max-width: 899px)"
+  # Desktop while music plays: its own cell, ending level with the media + ACs column
+  - type: custom:button-card
+    template: events_carousel
+    variables:
+      while_music: true
+    view_layout:
+      grid-area: events
+      show:
+        mediaquery: "(min-width: 900px)"
+  # Desktop without music: the ACs alone are much shorter than the people and tiles beside them, so the agenda
+  # takes the space under them, its frame level with the door/alarm and to-do/meds tiles. Those are 12px shorter
+  # than their 110px rows, so they span 98 + 10 + 12 + 98 = 218px; plus the agenda's 26px of markers, which hang
+  # into row 4. Aligned to the top, not stretched: hidden (while music plays) it then covers nothing
+  - type: custom:button-card
+    template: events_carousel
+    variables:
+      while_music: false
+    view_layout:
+      grid-area: 2 / 1 / 5 / 3
+      place-self: start stretch
+      show:
+        mediaquery: "(min-width: 900px)"
+    styles:
+      card:
+        - height: 244px
 
   # --- Alarm: tap more-info (arm/disarm), hold opens the alarm pop-up ---------------
   - type: custom:button-card
@@ -106,11 +166,57 @@ cards:
       active: "[[[ return entity?.state !== 'disarmed' ]]]"
       accent: "var(--catppuccin-red, #ed8796)"
       animation: "[[[ return entity?.state === 'triggered' ? 'pulse-red 1s ease-in-out infinite' : 'none' ]]]"
+      # Toggle: disarmed arms in Casa mode, armed disarms; both confirmed.
+      action_icon: "[[[ return entity?.state === 'disarmed' ? 'mdi:shield-home' : 'mdi:shield-off-outline' ]]]"
+      action: |
+        [[[
+          return entity?.state === 'disarmed'
+            ? { action: 'call-service', service: 'alarm_control_panel.alarm_arm_home',
+                service_data: { entity_id: 'alarm_control_panel.home' },
+                confirmation: { text: 'Armar o alarme em modo Casa?' }, haptic: 'success' }
+            : { action: 'call-service', service: 'alarm_control_panel.alarm_disarm',
+                service_data: { entity_id: 'alarm_control_panel.home' },
+                confirmation: { text: 'Desarmar o alarme?' }, haptic: 'success' };
+        ]]]
     tap_action:
-      action: more-info
-    hold_action:
       action: navigate
       navigation_path: "#alarm"
+
+  # --- Meds: current dose; tap marks it taken -----------------------------------------
+  - type: custom:button-card
+    template: tile
+    view_layout:
+      grid-area: meds
+    entity: sensor.meds
+    variables:
+      icon: "[[[ return entity?.state === 'taken' ? 'mdi:pill' : 'mdi:pill-multiple' ]]]"
+      label: |
+        [[[
+          const s = entity?.state, a = entity?.attributes || {};
+          const hhmm = (iso) => iso ? new Date(iso).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'}) : '';
+          if (s === 'taken') return `Tomado ${hhmm(a.taken_at)}`;
+          if (s === 'pending') return 'Pendente';
+          if (s === 'upcoming') return `Às ${hhmm(a.due)}`;
+          return '--';
+        ]]]
+      sublabel: "[[[ return entity?.attributes?.dose === 'morning' ? 'Remédio da manhã' : 'Remédio da noite' ]]]"
+      active: "[[[ return entity?.state === 'pending' ]]]"
+      accent: "var(--catppuccin-yellow, #eed49f)"
+      animation: "[[[ return entity?.state === 'pending' ? 'pulse 2s ease-in-out infinite' : 'none' ]]]"
+      # Quick "taken" button: unfilled and marks the dose while pending; filled green and inert once taken
+      # (call-service: the button is a paper-buttons-row)
+      action_icon: mdi:check
+      action_active: "[[[ return entity?.state === 'taken' ]]]"
+      action_accent: "var(--catppuccin-green, #a6da95)"
+      action: |
+        [[[
+          return entity?.state === 'taken' ? { action: 'none' }
+            : { action: 'call-service', service: 'script.meds_taken',
+                confirmation: { text: 'Marcar o remédio como tomado?' }, haptic: 'success' };
+        ]]]
+    tap_action:
+      action: navigate
+      navigation_path: "#meds"
 
   # --- To-do: open items across the three local lists ------------------------------
   - type: custom:button-card
@@ -230,63 +336,6 @@ cards:
           tap_action:
             action: navigate
             navigation_path: "#vacuum"
-
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: media_player.living_room
-            state: playing
-        card:
-          type: custom:button-card
-          template: active_row
-          variables:
-            play_pause_entity: media_player.living_room
-            icon: mdi:music
-            accent: "linear-gradient(135deg, rgba(245, 169, 127, 0.85), rgba(238, 153, 160, 0.85))"
-            image: "[[[ return states['media_player.living_room']?.attributes?.entity_picture || null ]]]"
-            title: "[[[ const t = states['media_player.living_room']?.attributes?.media_title; return t && !/:8097\\/source\\//.test(t) ? t : 'Tocando' ]]]"
-            subtitle: "[[[ return `Sala · ${states['media_player.living_room']?.attributes?.media_artist || ''}` ]]]"
-          tap_action:
-            action: navigate
-            navigation_path: "#media"
-
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: media_player.unnamed_room
-            state: playing
-        card:
-          type: custom:button-card
-          template: active_row
-          variables:
-            play_pause_entity: media_player.unnamed_room
-            icon: mdi:music
-            accent: "linear-gradient(135deg, rgba(245, 169, 127, 0.85), rgba(238, 153, 160, 0.85))"
-            image: "[[[ return states['media_player.unnamed_room']?.attributes?.entity_picture || null ]]]"
-            title: "[[[ const t = states['media_player.unnamed_room']?.attributes?.media_title; return t && !/:8097\\/source\\//.test(t) ? t : 'Tocando' ]]]"
-            subtitle: "[[[ return `Sonos Move · ${states['media_player.unnamed_room']?.attributes?.media_artist || ''}` ]]]"
-          tap_action:
-            action: navigate
-            navigation_path: "#media"
-
-      - type: conditional
-        conditions:
-          - condition: state
-            entity: media_player.kids_bedroom_kids_bedroom
-            state: playing
-        card:
-          type: custom:button-card
-          template: active_row
-          variables:
-            play_pause_entity: media_player.kids_bedroom_kids_bedroom
-            icon: mdi:music
-            accent: "linear-gradient(135deg, rgba(245, 169, 127, 0.85), rgba(238, 153, 160, 0.85))"
-            image: "[[[ return states['media_player.kids_bedroom_kids_bedroom']?.attributes?.entity_picture || null ]]]"
-            title: "[[[ const t = states['media_player.kids_bedroom_kids_bedroom']?.attributes?.media_title; return t && !/:8097\\/source\\//.test(t) ? t : 'Tocando' ]]]"
-            subtitle: "[[[ return `Quarto das crianças · ${states['media_player.kids_bedroom_kids_bedroom']?.attributes?.media_artist || ''}` ]]]"
-          tap_action:
-            action: navigate
-            navigation_path: "#media"
 
       - type: custom:weather-forecast-card
         entity: weather.home

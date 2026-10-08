@@ -2,19 +2,21 @@ type: custom:layout-card
 layout_type: custom:grid-layout
 layout:
   grid-template-columns: 1fr 1fr
-  grid-template-rows: 130px 130px 176px
+  # every room card 164px (cards are 12px shorter than their rows); the kids' carousel adds its 26px of markers
+  grid-template-rows: 176px 202px
   grid-gap: 10px
   margin: 8px 0 0 0
   grid-template-areas: |
-    "office suite"
     "office suite"
     "kids kids"
   mediaquery:
     "(min-width: 900px)":
       grid-template-columns: 1fr 1fr 2fr
-      grid-template-rows: 176px
+      # row 2 holds the kids' carousel markers, under its room card, which is level with the other two
+      grid-template-rows: 176px 26px
       grid-template-areas: |
         "office suite kids"
+        ". . kids"
 cards:
   - type: custom:button-card
     template: room_card_v2
@@ -57,15 +59,15 @@ cards:
       grid-area: kids
     cardId: upper_floor_kids
     pagination: true
-    height: 150px
-    custom_css:
-      "--pagination-bullet-active-background-color": "var(--catppuccin-mauve, #c6a0f6)"
-      "--pagination-bullet-background-color": "var(--catppuccin-surface1, #494d64)"
-      "--pagination-bullet-border": none
-      "--pagination-bullet-distance": 6px
+    height: 190px  # a 164px room card, as tall as the others, + 26px of markers below it
+    custom_css: !include ../../cards/swipe_css.yaml
     cards:
       - type: custom:button-card
         template: room_card_v2
+        # as tall as the office and suite cards; the carousel's markers go below it, not over it
+        styles: &kids_room_height
+          card:
+            - height: 164px
         variables:
           room: sensor.kids_bedroom_1_room
           icon: mdi:bed
@@ -78,6 +80,7 @@ cards:
               kind: ac
       - type: custom:button-card
         template: room_card_v2
+        styles: *kids_room_height
         variables:
           room: sensor.kids_bedroom_2_room
           icon: mdi:bed
@@ -90,6 +93,7 @@ cards:
               kind: ac
       - type: custom:button-card
         template: room_card_v2
+        styles: *kids_room_height
         variables:
           room: sensor.kids_bedroom_3_room
           icon: mdi:bed

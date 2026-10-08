@@ -1,0 +1,35 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#meds'
+entity: sensor.meds
+name: Remédios
+icon: mdi:pill
+button_type: name
+bg_blur: 16
+cards:
+  - type: custom:button-card
+    template: tile
+    entity: sensor.meds
+    variables:
+      icon: mdi:check
+      label: |
+        [[[
+          const t = entity?.attributes?.taken_at;
+          return entity?.state === 'taken' && t
+            ? `Tomado ${new Date(t).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}` : 'Tomei';
+        ]]]
+      sublabel: "[[[ return entity?.attributes?.dose === 'morning' ? 'Remédio da manhã' : 'Remédio da noite' ]]]"
+      accent: "var(--catppuccin-green, #a6da95)"
+      active: "[[[ return entity?.state === 'taken' ]]]"
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    tap_action:
+      action: perform-action
+      perform_action: script.meds_taken
+      confirmation:
+        text: Marcar o remédio como tomado?
+      haptic: success
+  - type: custom:button-card
+    template: meds_heatmap
+    entity: sensor.meds_log

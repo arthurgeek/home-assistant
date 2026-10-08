@@ -5,55 +5,80 @@ name: Iluminação
 icon: mdi:lightbulb-multiple
 bg_blur: 16
 cards:
+  - type: custom:button-card
+    template: tile
+    grid_options:
+      columns: 6
+    variables:
+      icon: mdi:home-lightbulb-outline
+      label: Apagar
+      sublabel: Luzes internas
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    tap_action:
+      action: perform-action
+      perform_action: script.turn_off_indoor_lights
+      haptic: success
+  - type: custom:button-card
+    template: tile
+    grid_options:
+      columns: 6
+    variables:
+      icon: mdi:lightbulb-off-outline
+      label: Apagar
+      sublabel: Todas as luzes
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    tap_action:
+      action: perform-action
+      perform_action: script.turn_off_all_lights
+      haptic: success
   - type: custom:bubble-card
     card_type: separator
-    name: Ações Rápidas
-    icon: mdi:lightning-bolt
-
-  - type: horizontal-stack
-    cards:
-      - type: custom:bubble-card
-        card_type: button
-        button_type: name
-        name: Apagar Luzes Internas
-        icon: mdi:home-lightbulb-outline
-        tap_action:
-          action: call-service
-          service: script.turn_off_indoor_lights
-      - type: custom:bubble-card
-        card_type: button
-        button_type: name
-        name: Apagar Todas
-        icon: mdi:lightbulb-off
-        tap_action:
-          action: call-service
-          service: script.turn_off_all_lights
-
-  - type: custom:bubble-card
-    card_type: separator
-    name: Interruptores Nomeados
-    icon: mdi:wall-sconce-flat
-
-  - type: custom:bubble-card
-    card_type: button
+    name: Superior
+    icon: mdi:home-floor-2
+  - type: custom:button-card
+    template: light_tile
     entity: light.office_light
-    name: Escritório
-    icon: mdi:desk
-
+    grid_options:
+      columns: 6
   - type: custom:bubble-card
-    card_type: button
+    card_type: separator
+    name: Externo
+    icon: mdi:pine-tree
+  - type: custom:button-card
+    template: light_tile
     entity: light.garage_light
-    name: Garagem Principal
-    icon: mdi:garage
-
-  - type: custom:bubble-card
-    card_type: button
+    grid_options:
+      columns: 6
+    variables:
+      detail: principal
+  - type: custom:button-card
+    template: light_tile
     entity: light.garage_front_light
-    name: Garagem Frontal
-    icon: mdi:garage-variant
-
+    grid_options:
+      columns: 6
+    variables:
+      detail: frontal
   - type: custom:bubble-card
-    card_type: button
+    card_type: separator
+    name: Rua
+    icon: mdi:road-variant
+  - type: custom:button-card
+    template: tile
     entity: light.street_lights
-    name: Luzes Externas / Jardim
-    icon: mdi:coach-lamp
+    grid_options:
+      columns: 6
+    styles:
+      card:
+        - height: 110px  # the tiles' height on Casa
+    tap_action:
+      action: none
+    variables:
+      icon: mdi:outdoor-lamp
+      label: "[[[ return entity?.state === 'on' ? 'Acesas' : entity?.state === 'off' ? 'Apagadas' : '--' ]]]"
+      sublabel: Rua · automático
+      active: "[[[ return entity?.state === 'on' ]]]"
+      accent: "var(--catppuccin-yellow, #eed49f)"

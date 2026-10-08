@@ -27,7 +27,7 @@ cards:
       popup: "#living_room"
       buttons:
         - icon: mdi:door
-          entity: binary_sensor.main_door
+          entity: button.main_door_unlock
           kind: press
           press_entity: button.main_door_unlock
         - icon: mdi:television

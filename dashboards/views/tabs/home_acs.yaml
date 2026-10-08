@@ -2,15 +2,42 @@ type: custom:css-swipe-card
 cardId: home_acs
 pagination: true
 height: 186px
-custom_css:
-  "--pagination-bullet-active-background-color": "var(--catppuccin-mauve, #c6a0f6)"
-  "--pagination-bullet-background-color": "var(--catppuccin-surface1, #494d64)"
-  "--pagination-bullet-border": none
-  "--pagination-bullet-distance": 6px
+custom_css: !include ../../cards/swipe_css.yaml
+# Six positions; sensor.ac_order decides which AC each one shows (ACs that are on first)
 cards:
-  - !include ../../cards/ac/main_bedroom.yaml
-  - !include ../../cards/ac/office.yaml
-  - !include ../../cards/ac/living_room.yaml
-  - !include ../../cards/ac/kids_bedroom_1.yaml
-  - !include ../../cards/ac/kids_bedroom_2.yaml
-  - !include ../../cards/ac/kids_bedroom_3.yaml
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 0
+      acs: &acs
+        - !include ../../cards/ac/main_bedroom.yaml
+        - !include ../../cards/ac/office.yaml
+        - !include ../../cards/ac/living_room.yaml
+        - !include ../../cards/ac/kids_bedroom_1.yaml
+        - !include ../../cards/ac/kids_bedroom_2.yaml
+        - !include ../../cards/ac/kids_bedroom_3.yaml
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 1
+      acs: *acs
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 2
+      acs: *acs
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 3
+      acs: *acs
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 4
+      acs: *acs
+  - type: custom:streamline-card
+    template: ac_slot
+    variables:
+      slot: 5
+      acs: *acs
