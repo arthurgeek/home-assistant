@@ -5,6 +5,26 @@
   {{- ((acs | select('in', on) | list) + (acs | reject('in', on) | list)) | to_json -}}
 {%- endmacro -%}
 
+{#- The Samsung ACs that show on and draw over 100 W while their energy counter has not changed for `hours`: SmartThings
+    stopped updating them. As JSON, a list of {ac, room}. -#}
+{%- macro ac_stalled(now, hours) -%}
+  {%- set units = {
+        'climate.main_bedroom_ac': ['sensor.main_bedroom_ac_energy', 'sensor.main_bedroom_ac_power'],
+        'climate.office_ac': ['sensor.office_ac_energy', 'sensor.office_ac_power'],
+        'climate.kids_bedroom_1_ac': ['sensor.kids_bedroom_1_ac_energy', 'sensor.kids_bedroom_1_ac_power'],
+        'climate.kids_bedroom_2_ac': ['sensor.kids_bedroom_2_ac_energy', 'sensor.kids_bedroom_2_ac_power'],
+        'climate.kids_bedroom_3_ac': ['sensor.kids_bedroom_3_ac_energy', 'sensor.kids_bedroom_3_ac_power'],
+      } -%}
+  {%- set ns = namespace(out=[]) -%}
+  {%- for ac, sensors in units.items() -%}
+    {%- if states(ac) not in ['off', 'unavailable', 'unknown'] and states(sensors[1]) | float(0) > 100
+          and states[sensors[0]] is not none and now - states[sensors[0]].last_changed > timedelta(hours=hours) -%}
+      {%- set ns.out = ns.out + [{'ac': ac, 'room': area_name(ac)}] -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {{- ns.out | to_json -}}
+{%- endmacro -%}
+
 {#- The Casa carousel order from the live states, on ones first, over this base order. As JSON. -#}
 {%- macro ac_live_order() -%}
   {%- set base = ['climate.main_bedroom_ac', 'climate.office_ac', 'climate.living_room_ac',

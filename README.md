@@ -47,7 +47,8 @@ Integrations:
 [SmartThings Extra](https://github.com/mik-laj/ha_smartthing_extra),
 [Microsoft Edge TTS](https://github.com/hasscc/hass-edge-tts),
 [Music Assistant Queue Actions](https://github.com/droans/mass_queue),
-[Verisure OWA](https://github.com/guerrerotook/securitas-direct-new-api).
+[Verisure OWA](https://github.com/guerrerotook/securitas-direct-new-api),
+[Tarifas de Energia Brasil](https://github.com/vodikus/ha_tarifas_energia_brasil).
 
 ## Setup
 

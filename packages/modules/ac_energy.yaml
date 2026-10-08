@@ -1,0 +1,211 @@
+# Monthly energy per AC. The Samsung units report a lifetime counter, so each gets a meter that resets on the 1st;
+# the LG reports its own month figure (in Wh). A sensor per AC, named after its room, declares the unit and class
+# (a meter only learns them when its source next changes), and the totals feed the AC pop-up.
+utility_meter:
+  ac_energy_main_bedroom_month:
+    unique_id: ac_energy_main_bedroom_month
+    name: Main Bedroom AC Energy Month
+    source: sensor.main_bedroom_ac_energy
+    cycle: monthly
+  ac_energy_office_month:
+    unique_id: ac_energy_office_month
+    name: Office AC Energy Month
+    source: sensor.office_ac_energy
+    cycle: monthly
+  ac_energy_kids_bedroom_1_month:
+    unique_id: ac_energy_kids_bedroom_1_month
+    name: Kids Bedroom 1 AC Energy Month
+    source: sensor.kids_bedroom_1_ac_energy
+    cycle: monthly
+  ac_energy_kids_bedroom_2_month:
+    unique_id: ac_energy_kids_bedroom_2_month
+    name: Kids Bedroom 2 AC Energy Month
+    source: sensor.kids_bedroom_2_ac_energy
+    cycle: monthly
+  ac_energy_kids_bedroom_3_month:
+    unique_id: ac_energy_kids_bedroom_3_month
+    name: Kids Bedroom 3 AC Energy Month
+    source: sensor.kids_bedroom_3_ac_energy
+    cycle: monthly
+
+template:
+  - sensor:
+      - name: "{{ area_name('climate.main_bedroom_ac') }}"
+        unique_id: ac_month_main_bedroom
+        default_entity_id: sensor.ac_month_main_bedroom
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ states('sensor.main_bedroom_ac_energy_month') | float(0) }}"
+        availability: "{{ is_number(states('sensor.main_bedroom_ac_energy_month')) }}"
+      - name: "{{ area_name('climate.office_ac') }}"
+        unique_id: ac_month_office
+        default_entity_id: sensor.ac_month_office
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ states('sensor.office_ac_energy_month') | float(0) }}"
+        availability: "{{ is_number(states('sensor.office_ac_energy_month')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_1_ac') }}"
+        unique_id: ac_month_kids_bedroom_1
+        default_entity_id: sensor.ac_month_kids_bedroom_1
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ states('sensor.kids_bedroom_1_ac_energy_month') | float(0) }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_1_ac_energy_month')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_2_ac') }}"
+        unique_id: ac_month_kids_bedroom_2
+        default_entity_id: sensor.ac_month_kids_bedroom_2
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ states('sensor.kids_bedroom_2_ac_energy_month') | float(0) }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_2_ac_energy_month')) }}"
+      - name: "{{ area_name('climate.kids_bedroom_3_ac') }}"
+        unique_id: ac_month_kids_bedroom_3
+        default_entity_id: sensor.ac_month_kids_bedroom_3
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ states('sensor.kids_bedroom_3_ac_energy_month') | float(0) }}"
+        availability: "{{ is_number(states('sensor.kids_bedroom_3_ac_energy_month')) }}"
+      - name: "{{ area_name('climate.living_room_ac') }}"
+        unique_id: ac_month_living_room
+        default_entity_id: sensor.ac_month_living_room
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ (states('sensor.living_room_ac_energy_this_month') | float(0) / 1000) | round(3) }}"
+        availability: "{{ is_number(states('sensor.living_room_ac_energy_this_month')) }}"
+
+      - name: AC Energy Month Total
+        unique_id: ac_energy_month_total
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ (['sensor.ac_month_main_bedroom', 'sensor.ac_month_office', 'sensor.ac_month_kids_bedroom_1', 'sensor.ac_month_kids_bedroom_2', 'sensor.ac_month_kids_bedroom_3', 'sensor.ac_month_living_room'] | map('states') | map('float', 0) | sum) | round(2) }}"
+        availability: "{{ ['sensor.ac_month_main_bedroom', 'sensor.ac_month_office', 'sensor.ac_month_kids_bedroom_1', 'sensor.ac_month_kids_bedroom_2', 'sensor.ac_month_kids_bedroom_3', 'sensor.ac_month_living_room'] | map('states') | select('is_number') | list | count == 6 }}"
+
+      # What a kWh costs on the bill: the tariff integration gives the price without taxes (TUSD + TE), the bandeira
+      # is added per kWh, and ICMS (18%) and PIS/COFINS (about 6.8%) are charged on top of that, as in the 09/2026 bill
+      - name: Full Energy Price
+        unique_id: full_energy_price
+        default_entity_id: sensor.full_energy_price
+        icon: mdi:cash
+        device_class: monetary
+        unit_of_measurement: BRL/kWh
+        state: >-
+          {{ ((states('sensor.tarifas_edp_sp_tarifa_vigente') | float
+               + state_attr('sensor.tarifas_edp_sp_tarifa_vigente', 'valor_adicional_bandeira') | float(0))
+              / ((1 - 0.18) * (1 - 0.068))) | round(4) }}
+        availability: "{{ is_number(states('sensor.tarifas_edp_sp_tarifa_vigente')) }}"
+
+      # Lifetime counter of all the ACs together: the Energy dashboard prices this one as its only source
+      - name: AC Energy Lifetime Total
+        unique_id: ac_energy_lifetime_total
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: "{{ ((['sensor.main_bedroom_ac_energy', 'sensor.office_ac_energy', 'sensor.kids_bedroom_1_ac_energy', 'sensor.kids_bedroom_2_ac_energy', 'sensor.kids_bedroom_3_ac_energy'] | map('states') | map('float', 0) | sum) + states('sensor.ac_energy_lifetime_living_room') | float(0)) | round(3) }}"
+        availability: "{{ ['sensor.main_bedroom_ac_energy', 'sensor.office_ac_energy', 'sensor.kids_bedroom_1_ac_energy', 'sensor.kids_bedroom_2_ac_energy', 'sensor.kids_bedroom_3_ac_energy'] | map('states') | select('is_number') | list | count == 5 }}"
+
+      # The LG has no power sensor, so this is the Samsung ACs only
+      - name: AC Power Total
+        unique_id: ac_power_total
+        icon: mdi:flash
+        device_class: power
+        state_class: measurement
+        unit_of_measurement: W
+        state: >-
+          {{ ['sensor.main_bedroom_ac_power', 'sensor.office_ac_power',
+              'sensor.kids_bedroom_1_ac_power', 'sensor.kids_bedroom_2_ac_power', 'sensor.kids_bedroom_3_ac_power']
+             | map('states') | map('float', 0) | sum | round(0) }}
+        availability: >-
+          {{ ['sensor.main_bedroom_ac_power', 'sensor.office_ac_power',
+              'sensor.kids_bedroom_1_ac_power', 'sensor.kids_bedroom_2_ac_power', 'sensor.kids_bedroom_3_ac_power']
+             | map('states') | select('is_number') | list | count == 5 }}
+
+  # An AC that is on and drawing power must move its energy counter: three hours without that means SmartThings
+  # stopped updating (the counters then jump once it comes back)
+  - binary_sensor:
+      - name: AC Energy Stalled
+        unique_id: ac_energy_stalled
+        default_entity_id: binary_sensor.ac_energy_stalled
+        device_class: problem
+        state: "{% from 'ac.jinja' import ac_stalled %}{{ ac_stalled(now(), 3) | from_json | count > 0 }}"
+        attributes:
+          acs: "{% from 'ac.jinja' import ac_stalled %}{{ ac_stalled(now(), 3) | from_json | map(attribute='ac') | list }}"
+          rooms: "{% from 'ac.jinja' import ac_stalled %}{{ ac_stalled(now(), 3) | from_json | map(attribute='room') | list }}"
+
+  # The LG has no lifetime counter, only a month figure (Wh) that resets on the 1st: add every increase, and the new
+  # value when it resets
+  - triggers:
+      - trigger: state
+        entity_id: sensor.living_room_ac_energy_this_month
+      - trigger: homeassistant
+        event: start
+      - trigger: event
+        event_type: event_template_reloaded
+    sensor:
+      - name: AC Energy Lifetime Living Room
+        unique_id: ac_energy_lifetime_living_room
+        default_entity_id: sensor.ac_energy_lifetime_living_room
+        icon: mdi:flash
+        device_class: energy
+        state_class: total_increasing
+        unit_of_measurement: kWh
+        state: >-
+          {% set total = this.state | float(0) %}
+          {% if trigger.platform != 'state' or trigger.from_state is none
+                or not is_number(trigger.from_state.state) or not is_number(trigger.to_state.state) %}
+            {{ total }}
+          {% else %}
+            {% set new = trigger.to_state.state | float %}
+            {% set old = trigger.from_state.state | float %}
+            {{ (total + (new - old if new >= old else new) / 1000) | round(3) }}
+          {% endif %}
+
+automation:
+  - id: ac_energy_stalled
+    alias: AC · Energy Counter Stalled
+    description: Reloads SmartThings when an AC that is on stopped reporting its energy, and notifies both parents
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.ac_energy_stalled
+        to: "on"
+        for: "00:10:00"
+    conditions:
+      - condition: template
+        value_template: "{{ this.attributes.last_triggered is none or now() - this.attributes.last_triggered > timedelta(hours=6) }}"
+    actions:
+      - variables:
+          acs: "{{ state_attr('binary_sensor.ac_energy_stalled', 'acs') }}"
+          rooms: "{{ state_attr('binary_sensor.ac_energy_stalled', 'rooms') | join(', ') }}"
+      - action: homeassistant.reload_config_entry
+        data:
+          entry_id: "{{ config_entry_id(acs[0]) }}"
+      - wait_template: "{{ is_state('binary_sensor.ac_energy_stalled', 'off') }}"
+        timeout: "00:15:00"
+        continue_on_timeout: true
+      - action: script.notify_parents
+        data:
+          title: "❄️ Consumo dos ar-condicionados"
+          message: >-
+            {% if wait.completed %}
+              O SmartThings tinha parado de atualizar o consumo ({{ rooms }}). Reconectei e voltou a atualizar.
+            {% else %}
+              O SmartThings parou de atualizar o consumo ({{ rooms }}) e reconectar não resolveu. Pode ser preciso reiniciar o Home Assistant.
+            {% endif %}
+          channel: "General"
+          importance: "high"
+          notification_icon: "mdi:air-conditioner"
