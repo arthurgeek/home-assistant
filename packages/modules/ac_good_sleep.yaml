@@ -58,6 +58,74 @@ automation:
                            .acTropicalNightModeLevel.value | int(0) }}
             - delay: "00:05:00"
 
+  - id: ac_night_sleep
+    alias: AC · Night Turn-On Goes to Sleep
+    description: >-
+      Between 21:00 and 07:00, any Samsung AC that turns on, however it was started (remote, app, dashboard), goes to
+      WindFree Sleep with a Good Sleep timer of 1 hour. In a cold room (below 18°) it heats to 22° in the Sleep preset
+      instead. Anything changed afterwards, from the dashboard or the remote, is kept; the night off automation below
+      is the limit.
+    mode: parallel
+    max: 5
+    triggers:
+      - trigger: climate.turned_on
+        target:
+          label_id: samsung
+        options:
+          behavior: each
+    conditions:
+      - condition: time
+        after: "21:00:00"
+        before: "07:00:00"
+    actions:
+      - choose:
+          - alias: The room is cold, so heat
+            conditions:
+              - condition: template
+                value_template: "{{ state_attr(trigger.entity_id, 'current_temperature') | float(99) < 18 }}"
+            sequence:
+              - action: climate.set_hvac_mode
+                target:
+                  entity_id: "{{ trigger.entity_id }}"
+                data:
+                  hvac_mode: heat
+              - action: climate.set_temperature
+                target:
+                  entity_id: "{{ trigger.entity_id }}"
+                data:
+                  temperature: 22
+              # the AC may not offer Sleep in every mode; heating at 22° is what matters
+              - action: climate.set_preset_mode
+                continue_on_error: true
+                target:
+                  entity_id: "{{ trigger.entity_id }}"
+                data:
+                  preset_mode: sleep
+        default:
+          - action: script.ac_good_sleep
+            data:
+              entity_id: "{{ trigger.entity_id }}"
+              hours: 1
+
+  - id: ac_night_off
+    alias: AC · Night Off After Two Hours
+    description: >-
+      Between 21:00 and 07:00, turns off any air conditioner that has been on for two hours, whatever its mode, timer
+      or settings. It is the limit for an AC whose night sleep was changed from the dashboard or the remote.
+    mode: single
+    triggers:
+      - trigger: template
+        value_template: >-
+          {{ (now().hour >= 21 or now().hour < 7)
+             and states.climate | rejectattr('state', 'in', ['off', 'unavailable', 'unknown'])
+                 | selectattr('last_changed', 'lt', now() - timedelta(hours=2)) | list | count > 0 }}
+    actions:
+      - action: climate.turn_off
+        target:
+          entity_id: >-
+            {{ states.climate | rejectattr('state', 'in', ['off', 'unavailable', 'unknown'])
+               | selectattr('last_changed', 'lt', now() - timedelta(hours=2)) | map(attribute='entity_id') | list }}
+
 template:
   - triggers:
       - trigger: event
