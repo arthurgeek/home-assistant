@@ -48,33 +48,32 @@ cards:
       sublabel: Agora · ACs Samsung
       active: "[[[ return parseFloat(entity.state) > 0 ]]]"
       accent: "var(--catppuccin-yellow, #eed49f)"
-  - type: distribution
-    title: Este mês por ar-condicionado
+  - type: custom:auto-entities
+    show_empty: false
     grid_options:
       columns: full
-    entities:
-      - sensor.ac_month_main_bedroom
-      - sensor.ac_month_office
-      - sensor.ac_month_kids_bedroom_1
-      - sensor.ac_month_kids_bedroom_2
-      - sensor.ac_month_kids_bedroom_3
-      - sensor.ac_month_living_room
-  - type: statistics-graph
-    title: Consumo por mês
-    chart_type: bar-stack
-    period: month
-    stat_types:
-      - change
-    days_to_show: 180
+    card:
+      type: distribution
+      title: Este mês por ar-condicionado
+    filter:
+      include:
+        - entity_id: sensor.ac_month_*
+  - type: custom:auto-entities
+    show_empty: false
     grid_options:
       columns: full
       rows: auto
-    entities:
-      - sensor.main_bedroom_ac_energy
-      - sensor.office_ac_energy
-      - sensor.kids_bedroom_1_ac_energy
-      - sensor.kids_bedroom_2_ac_energy
-      - sensor.kids_bedroom_3_ac_energy
+    card:
+      type: statistics-graph
+      title: Consumo por mês
+      chart_type: bar-stack
+      period: month
+      stat_types:
+        - change
+      days_to_show: 180
+    filter:
+      include:
+        - entity_id: sensor.*_ac_energy
   - type: custom:bubble-card
     card_type: separator
     name: Aparelhos

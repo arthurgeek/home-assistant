@@ -35,50 +35,105 @@ cards:
       action: perform-action
       perform_action: script.turn_off_all_lights
       haptic: success
-  - type: custom:bubble-card
-    card_type: separator
-    name: Superior
-    icon: mdi:home-floor-2
   - type: custom:button-card
-    template: light_tile
-    entity: light.office_light
-    grid_options:
-      columns: 6
-  - type: custom:bubble-card
-    card_type: separator
-    name: Externo
-    icon: mdi:pine-tree
-  - type: custom:button-card
-    template: light_tile
-    entity: light.garage_light
-    grid_options:
-      columns: 6
+    template: section_heading
     variables:
-      detail: principal
-  - type: custom:button-card
-    template: light_tile
-    entity: light.garage_front_light
+      floor: ground_floor
+      domain: light
+  - type: custom:auto-entities
+    show_empty: false
     grid_options:
-      columns: 6
-    variables:
-      detail: frontal
-  - type: custom:bubble-card
-    card_type: separator
-    name: Rua
-    icon: mdi:road-variant
+      columns: full
+      rows: auto
+    card:
+      type: grid
+      columns: 2
+      square: false
+      cards:
+        - type: custom:button-card
+          template: nothing
+    card_param: cards
+    filter:
+      include:
+        - floor: ground_floor
+          domain: light
+          options:
+            type: custom:button-card
+            template: light_tile
   - type: custom:button-card
-    template: tile
-    entity: light.street_lights
-    grid_options:
-      columns: 6
-    styles:
-      card:
-        - height: 110px  # the tiles' height on Casa
-    tap_action:
-      action: none
+    template: section_heading
     variables:
-      icon: mdi:outdoor-lamp
-      label: "[[[ return entity?.state === 'on' ? 'Acesas' : entity?.state === 'off' ? 'Apagadas' : '--' ]]]"
-      sublabel: Rua · automático
-      active: "[[[ return entity?.state === 'on' ]]]"
-      accent: "var(--catppuccin-yellow, #eed49f)"
+      floor: upper_floor
+      domain: light
+  - type: custom:auto-entities
+    show_empty: false
+    grid_options:
+      columns: full
+      rows: auto
+    card:
+      type: grid
+      columns: 2
+      square: false
+    card_param: cards
+    filter:
+      include:
+        - floor: upper_floor
+          domain: light
+          options:
+            type: custom:button-card
+            template: light_tile
+  - type: custom:button-card
+    template: section_heading
+    variables:
+      floor: outside
+      domain: light
+  - type: custom:auto-entities
+    show_empty: false
+    grid_options:
+      columns: full
+      rows: auto
+    card:
+      type: grid
+      columns: 2
+      square: false
+    card_param: cards
+    filter:
+      include:
+        - floor: outside
+          domain: light
+          options:
+            type: custom:button-card
+            template: light_tile
+  - type: custom:button-card
+    template: section_heading
+    variables:
+      area: street
+      title: Rua
+      icon: mdi:road-variant
+      domain: light
+  - type: custom:auto-entities
+    show_empty: false
+    grid_options:
+      columns: full
+      rows: auto
+    card:
+      type: vertical-stack
+    card_param: cards
+    filter:
+      include:
+        - area: street
+          domain: light
+          options:
+            type: custom:button-card
+            template: tile
+            styles:
+              card:
+                - height: 110px  # the tiles' height on Casa
+            tap_action:
+              action: none
+            variables:
+              icon: mdi:outdoor-lamp
+              label: "[[[ return entity?.state === 'on' ? 'Acesas' : entity?.state === 'off' ? 'Apagadas' : '--' ]]]"
+              sublabel: Rua · automático
+              active: "[[[ return entity?.state === 'on' ]]]"
+              accent: "var(--catppuccin-yellow, #eed49f)"

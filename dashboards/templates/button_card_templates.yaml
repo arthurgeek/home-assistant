@@ -738,7 +738,6 @@ meds_heatmap:
 light_tile:
   template: tile
   variables:
-    detail: ""
     icon: "[[[ return entity?.state === 'on' ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline' ]]]"
     label: "[[[ return entity?.state === 'on' ? 'Acesa' : entity?.state === 'off' ? 'Apagada' : '--' ]]]"
     sublabel: |
@@ -746,7 +745,9 @@ light_tile:
         const reg = hass.entities?.[entity?.entity_id];
         const areaId = reg?.area_id || hass.devices?.[reg?.device_id]?.area_id;
         const area = hass.areas?.[areaId]?.name || '';
-        return [area, variables.detail].filter(Boolean).join(' · ');
+        const lights = Object.keys(hass.entities).filter((id) => id.startsWith('light.') && states[id]
+          && (hass.entities[id].area_id || hass.devices?.[hass.entities[id].device_id]?.area_id) === areaId);
+        return [area, lights.length > 1 ? entity.attributes.friendly_name : ''].filter(Boolean).join(' · ');
       ]]]
     active: "[[[ return entity?.state === 'on' ]]]"
     accent: "var(--catppuccin-yellow, #eed49f)"
@@ -1189,12 +1190,14 @@ room_card_v2:
           ]]]
 
 # ==========================================================================
-# Heading of a pop-up section, like Bubble's separator, shown only when the area holds an entity of `domain` (and
-# `device_class`, if given). Variables: area (id), title, icon, domain, device_class.
+# Heading of a pop-up section, like Bubble's separator, shown only when the area (or floor) holds an entity of `domain`
+# (and `device_class`, if given). Variables: area (id) or floor (id; its name and icon are the heading's), title, icon,
+# domain, device_class.
 # ==========================================================================
 section_heading:
-  template: area_room
   variables:
+    area: null
+    floor: null
     title: ""
     icon: mdi:circle
     domain: ""
@@ -1206,9 +1209,18 @@ section_heading:
     action: none
   styles:
     card:
-      - display: >-
-          [[[ return variables.room.entities.some((id) => id.startsWith(variables.domain + '.')
-                && (!variables.device_class || states[id].attributes.device_class === variables.device_class)) ? 'block' : 'none' ]]]
+      - display: |
+          [[[
+            const scope = (id) => {
+              const e = hass.entities[id];
+              const area = e?.area_id ?? hass.devices[e?.device_id]?.area_id;
+              return variables.floor ? hass.areas[area]?.floor_id === variables.floor : area === variables.area;
+            };
+            const found = Object.keys(hass.entities).some((id) => states[id] && !hass.entities[id].hidden && scope(id)
+              && id.startsWith(variables.domain + '.')
+              && (!variables.device_class || states[id].attributes.device_class === variables.device_class));
+            return found ? 'block' : 'none';
+          ]]]
       - background: none
       - border: none
       - box-shadow: none
@@ -1222,9 +1234,12 @@ section_heading:
   custom_fields:
     heading: |
       [[[
+        const floor = hass.floors?.[variables.floor];
+        const title = variables.title || floor?.name || '';
+        const icon = variables.floor ? (floor?.icon || 'mdi:home') : variables.icon;
         return `<div style="display: flex; align-items: center; gap: 22px; padding: 0 4px;">
-          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-text, #cad3f5);"></ha-icon>
-          <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${variables.title}</span>
+          <ha-icon icon="${icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-text, #cad3f5);"></ha-icon>
+          <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${title}</span>
           <div style="flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.18);"></div></div>`;
       ]]]
 

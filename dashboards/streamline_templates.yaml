@@ -11,10 +11,12 @@ ac_popup:
     show_header: false
     bg_blur: 16
     cards:
-      - type: custom:button-card
-        template: room_header
-        variables:
-          area: "[[key]]"
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
       - type: custom:auto-entities
         show_empty: false
         grid_options:
@@ -165,11 +167,13 @@ ac_sleep_chooser:
     show_header: false
     bg_blur: 16
     cards:
-      - type: custom:button-card
-        template: room_header
-        variables:
-          area: "[[key]]"
-          icon: mdi:weather-night
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
+              icon: mdi:weather-night
       - type: custom:bubble-card
         card_type: separator
         name: WindFree Sono · desligar em
@@ -237,10 +241,12 @@ room_popup:
     show_header: false
     bg_blur: 16
     cards:
-      - type: custom:button-card
-        template: room_header
-        variables:
-          area: "[[key]]"
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
       - type: custom:button-card
         template: section_heading
         variables:
