@@ -1,0 +1,16 @@
+automation:
+  - id: kids_bedroom_2_area_empty
+    alias: Kids Bedroom 2 · Area Empty
+    description: Turns off the lights and AC once the room has been empty for five minutes
+    use_blueprint:
+      path: home/area_empty.yaml
+      input:
+        area: kids_bedroom_2
+
+  - id: kids_bedroom_3_area_empty
+    alias: Kids Bedroom 3 · Area Empty
+    description: Turns off the lights and AC once the room has been empty for five minutes
+    use_blueprint:
+      path: home/area_empty.yaml
+      input:
+        area: kids_bedroom_3
