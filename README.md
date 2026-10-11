@@ -15,7 +15,7 @@ The interface is in Brazilian Portuguese; everything else is in English.
 | `packages/modes/` | House mode (day, night, away) |
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
-| `dashboards/` | The Casa dashboard: views, pop-ups and card templates. Room cards and pop-ups are built from the Home Assistant areas (name, icon, temperature, lights, ACs, occupancy sensor), so a new sensor or light needs no dashboard change, only its area |
+| `dashboards/` | The Casa dashboard: views, pop-ups and card templates (one file per template under `dashboards/templates/`). Room cards and pop-ups are built from the Home Assistant areas (name, icon, temperature, lights, ACs, occupancy sensor), so a new sensor or light needs no dashboard change, only its area |
 | `custom_templates/` | Shared Jinja macros |
 | `themes/` | The Catppuccin theme |
 | `www/` | Bubble Card modules |

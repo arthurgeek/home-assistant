@@ -1,0 +1,157 @@
+# Pop-up of an area's AC. Variables: key (the area id). Everything else is found from the area: its AC, the AC's
+# controls, the panel light and, on the LG, energy saving, the off timer and the filter hours (each only if the area has
+# it).
+ac_popup:
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#ac_[[key]]"
+    show_header: false
+    bg_blur: 16
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: climate
+              options:
+                type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    template: ac_card
+                    entity: this.entity_id
+                  - type: custom:button-card
+                    template: ac_options
+                    entity: this.entity_id
+                    variables:
+                      attribute: hvac_mode
+                  - type: custom:button-card
+                    template: ac_options
+                    entity: this.entity_id
+                    variables:
+                      attribute: preset_mode
+                  - type: custom:button-card
+                    template: ac_sleep_extend
+                    entity: this.entity_id
+                  - type: custom:button-card
+                    template: ac_options
+                    entity: this.entity_id
+                    variables:
+                      attribute: fan_mode
+                  - type: custom:button-card
+                    template: ac_options
+                    entity: this.entity_id
+                    variables:
+                      attribute: swing_mode
+      - type: custom:bubble-card
+        card_type: separator
+        name: Extras
+        icon: mdi:dots-horizontal-circle-outline
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: switch
+              entity_id: "*lighting"
+              options:
+                type: custom:bubble-card
+                card_type: button
+                name: Luz do painel
+                icon: mdi:led-on
+            - area: "[[key]]"
+              domain: switch
+              entity_id: "*energy_saving"
+              options:
+                type: custom:bubble-card
+                card_type: button
+                name: Economia de energia
+                icon: mdi:leaf
+            - area: "[[key]]"
+              domain: number
+              entity_id: "*schedule_turn_off"
+              options:
+                type: custom:paper-buttons-row
+                styles:
+                  flex-wrap: wrap
+                  gap: 8px
+                  justify-content: flex-start
+                base_config:
+                  layout: name
+                  ripple: none
+                  styles:
+                    button:
+                      padding: 8px 14px
+                      border-radius: 18px
+                      background: "rgba(73, 77, 100, 0.6)"
+                    name:
+                      color: "var(--catppuccin-text, #cad3f5)"
+                      font-size: 13px
+                  tap_action:
+                    action: call-service
+                    service: number.set_value
+                buttons:
+                  - name: "Desligar em:"
+                    tap_action:
+                      action: none
+                    styles:
+                      button:
+                        background: none
+                  - name: 1h
+                    tap_action:
+                      service_data: {entity_id: this.entity_id, value: 1}
+                  - name: 2h
+                    tap_action:
+                      service_data: {entity_id: this.entity_id, value: 2}
+                  - name: 4h
+                    tap_action:
+                      service_data: {entity_id: this.entity_id, value: 4}
+                  - name: Cancelar
+                    tap_action:
+                      service_data: {entity_id: this.entity_id, value: 0}
+            - area: "[[key]]"
+              domain: sensor
+              entity_id: "*filter_remaining"
+              options:
+                type: custom:bubble-card
+                card_type: button
+                button_type: state
+                name: Filtro (horas restantes)
+                icon: mdi:air-filter
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: climate
+              options:
+                type: custom:streamline-card
+                template: history_graph
+                variables:
+                  area: "[[key]]"
+                  climate: this.entity_id

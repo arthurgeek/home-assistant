@@ -1,0 +1,53 @@
+# ==========================================================================
+# Good Sleep extension row (AC pop-up): buttons that add time, shown only while the AC runs Good Sleep
+# The AC is the card's entity; see ac_device.
+# ==========================================================================
+ac_sleep_extend:
+  template: ac_device
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  show_state: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - background: none
+      - border: none
+      - padding: 4px 0
+      - display: |
+          [[[ return states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.ac.climate] ? 'block' : 'none'; ]]]
+    grid:
+      - grid-template-areas: "'title' 'row'"
+      - row-gap: 10px
+    custom_fields:
+      title:
+        - justify-self: stretch
+  custom_fields:
+    title: |
+      [[[
+        return `<div style="display: flex; align-items: center; gap: 16px; color: var(--catppuccin-text, #cad3f5);">
+          <ha-icon icon="mdi:timer-plus-outline" style="--mdc-icon-size: 24px;"></ha-icon>
+          <span style="font-size: 18px; font-weight: 600; white-space: nowrap;">Prolongar o sono</span>
+          <span style="flex: 1; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.18);"></span></div>`;
+      ]]]
+    row:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          flex-wrap: wrap
+          gap: 8px
+          justify-content: flex-start
+        buttons: |-
+          [[[
+            return [[0.5, '+30 min'], [1, '+1 h'], [2, '+2 h']].map(([hours, label]) => ({
+              name: label, icon: 'mdi:timer-plus-outline', layout: 'icon|name', ripple: 'none',
+              tap_action: { action: 'call-service', service: 'script.ac_good_sleep_extend',
+                            service_data: { entity_id: variables.ac.climate, hours }, haptic: 'success' },
+              styles: {
+                button: { padding: '8px 14px', 'border-radius': '18px', background: 'rgba(73, 77, 100, 0.6)' },
+                name: { 'font-size': '13px', color: 'var(--catppuccin-text, #cad3f5)' },
+                icon: { color: 'var(--catppuccin-text, #cad3f5)' },
+              },
+            }));
+          ]]]

@@ -1,0 +1,316 @@
+# ==========================================================================
+# AC card: current temp (+ humidity), temp curve background, mode buttons,
+# vertical target control. Samsung: WindFree; LG: Eco switch.
+# Variables: climate (optional: the card's entity is used otherwise); everything else comes from ac_device.
+# ==========================================================================
+ac_card:
+  template:
+    - base_card
+    - anim
+    - ac_device
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  show_state: false
+  # a tap opens the AC's pop-up wherever the card is (Casa, the climate pop-up, a room pop-up); inside that pop-up
+  # it opens the AC's own dialog, with its history and attributes
+  tap_action:
+    action: "[[[ return location.hash === '#ac_' + variables.ac.area ? 'more-info' : 'navigate' ]]]"
+    navigation_path: "[[[ return '#ac_' + variables.ac.area ]]]"
+    entity: "[[[ return variables.ac.climate ]]]"
+  hold_action:
+    action: navigate
+    navigation_path: "#climate"
+  styles:
+    card:
+      - height: 160px
+      - padding: 12px 10px 12px 16px
+      - overflow: hidden
+    grid:
+      - grid-template-areas: "'temp target' 'title target' 'modes target'"
+      - grid-template-columns: 1fr min-content
+      - grid-template-rows: 1fr min-content min-content
+      - column-gap: 8px
+      - row-gap: 4px
+    custom_fields:
+      graph:
+        - position: absolute
+        - left: 0
+        - right: 0
+        - bottom: 0
+        - pointer-events: none
+        - opacity: 0.5
+      sleepbar:
+        - position: absolute
+        - left: 0
+        - right: 0
+        - bottom: 0
+        - z-index: 2
+        - pointer-events: none
+      temp:
+        - justify-self: start
+        - align-self: end
+        - z-index: 1
+      title:
+        - justify-self: start
+        - align-self: start
+        - text-align: left
+        - z-index: 1
+      modes:
+        - justify-self: start
+        - align-self: end
+        - z-index: 1
+      target:
+        - align-self: center
+        - z-index: 1
+  custom_fields:
+    temp: |
+      [[[
+        const c = states[variables.ac.climate];
+        const raw = variables.ac.temperature ? states[variables.ac.temperature]?.state : c?.attributes?.current_temperature;
+        const t = parseFloat(raw);
+        const h = variables.ac.humidity ? parseFloat(states[variables.ac.humidity]?.state) : NaN;
+        const temp = isNaN(t) ? '--' : t.toFixed(1);
+        const hum = isNaN(h) ? '' : `<span style="font-size: 13px; opacity: .7; margin-left: 6px;">${h.toFixed(0)}%</span>`;
+        return `<span style="font-size: 2.4em; font-weight: 300; color: var(--catppuccin-text, #cad3f5);">${temp}°</span>${hum}`;
+      ]]]
+    title: |
+      [[[
+        const c = states[variables.ac.climate];
+        const on = c && !['off', 'unavailable', 'unknown'].includes(c.state);
+        let status = '';
+        if (on && variables.ac.power) {
+          const w = parseFloat(states[variables.ac.power]?.state);
+          if (!isNaN(w)) status = `⚡ ${w.toFixed(0)} W`;
+        } else if (on && variables.ac.energyToday) {
+          const wh = parseFloat(states[variables.ac.energyToday]?.state);
+          if (!isNaN(wh)) status = `⚡ ${(wh / 1000).toFixed(1).replace('.', ',')} kWh hoje`;
+        }
+        // Good Sleep: end time in the status line; the progress bar along the bottom shows what's left
+        if (on && ['sleep', 'wind_free_sleep'].includes(c?.attributes?.preset_mode)) {
+          const endIso = states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.ac.climate];
+          const end = endIso ? new Date(endIso) : null;
+          const mins = end ? Math.max(0, Math.round((end - Date.now()) / 60000)) : null;
+          const left = mins === null ? null
+            : mins < 60 ? `${mins} min` : `${Math.floor(mins / 60)}h${mins % 60 ? String(mins % 60).padStart(2, '0') : ''}`;
+          const sleep = left ? `⏾ ${left}` : '⏾ Bom sono';
+          status = status ? `${status} · ${sleep}` : sleep;
+        }
+        if (!c || c.state === 'unavailable') status = 'indisponível';
+        const entry = hass.entities[variables.ac.climate];
+        const name = hass.areas[entry?.area_id ?? hass.devices[entry?.device_id]?.area_id]?.name || '--';
+        return `<div style="font-size: 14px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${name}</div>
+                <div style="font-size: 11px; color: var(--catppuccin-subtext0, #a5adcb); min-height: 14px;">${status}</div>`;
+      ]]]
+    # Good Sleep progress: full width at start, shrinking to the left as the AC approaches switch-off
+    sleepbar: |
+      [[[
+        const info = states['sensor.ac_good_sleep_ends']?.attributes || {};
+        const endIso = info.ends?.[variables.ac.climate], startIso = info.starts?.[variables.ac.climate];
+        const c = states[variables.ac.climate];
+        if (!endIso || !startIso || !c || c.state === 'off') return '';
+        const end = new Date(endIso), start = new Date(startIso);
+        const left = Math.min(1, Math.max(0, (end - Date.now()) / (end - start)));
+        return `<div style="height: 4px; background: rgba(202, 211, 245, 0.12);">
+          <div style="height: 100%; width: ${(left * 100).toFixed(1)}%; background: var(--catppuccin-mauve, #c6a0f6);
+                      border-radius: 0 2px 2px 0; transition: width 1s linear;"></div></div>`;
+      ]]]
+    graph:
+      card:
+        type: custom:mini-graph-card
+        entities:
+          - entity: "[[[ return variables.ac.temperature || variables.ac.climate ]]]"
+            attribute: "[[[ return variables.ac.temperature ? undefined : 'current_temperature' ]]]"
+            color: "rgba(202, 211, 245, 0.25)"
+        hours_to_show: 24
+        points_per_hour: 1
+        line_width: 0
+        height: 70
+        animate: true
+        show:
+          name: false
+          icon: false
+          state: false
+          legend: false
+          labels: false
+          points: false
+          fill: fade
+        card_mod:
+          style: |
+            ha-card { background: none !important; border: none !important; box-shadow: none !important; }
+    modes:
+      card:
+        type: custom:paper-buttons-row
+        extra_styles: |
+          @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+        styles:
+          flex-wrap: nowrap
+          gap: 0
+        base_config:
+          ripple: none
+          layout: icon
+          styles:
+            button:
+              width: 34px
+              height: 34px
+              padding: 0
+              border-radius: 0
+              background: "rgba(73, 77, 100, 0.85)"
+            icon:
+              color: "var(--catppuccin-text, #cad3f5)"
+              --mdc-icon-size: 18px
+        buttons:
+          # Power: off -> cool @ 23 (script); on -> off; hold: always off (the state can be stale)
+          - icon: mdi:power
+            tap_action:
+              action: call-service
+              service: "[[[ return states[variables.ac.climate]?.state === 'off' ? 'script.ac_turn_on' : 'climate.turn_off' ]]]"
+              service_data:
+                entity_id: "[[[ return variables.ac.climate ]]]"
+            hold_action:
+              action: call-service
+              service: climate.turn_off
+              service_data:
+                entity_id: "[[[ return variables.ac.climate ]]]"
+              haptic: heavy
+            styles:
+              button:
+                border-radius: 50% 0 0 50%
+                background: "[[[ return states[variables.ac.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.ac.climate].state) ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+              icon:
+                color: "[[[ return states[variables.ac.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.ac.climate].state) ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+          - icon: mdi:snowflake
+            tap_action:
+              action: call-service
+              service: climate.set_hvac_mode
+              service_data:
+                entity_id: "[[[ return variables.ac.climate ]]]"
+                hvac_mode: cool
+            styles:
+              button:
+                background: "[[[ return states[variables.ac.climate]?.state === 'cool' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+              icon:
+                color: "[[[ return states[variables.ac.climate]?.state === 'cool' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+          - icon: mdi:water-percent
+            tap_action:
+              action: call-service
+              service: climate.set_hvac_mode
+              service_data:
+                entity_id: "[[[ return variables.ac.climate ]]]"
+                hvac_mode: dry
+            styles:
+              button:
+                background: "[[[ return states[variables.ac.climate]?.state === 'dry' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+              icon:
+                color: "[[[ return states[variables.ac.climate]?.state === 'dry' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+          # 4th button: WindFree (Samsung preset) or Eco (LG switch)
+          - icon: "[[[ return variables.ac.samsung ? 'mdi:weather-windy' : 'mdi:leaf' ]]]"
+            tap_action:
+              action: call-service
+              service: "[[[ return variables.ac.samsung ? 'climate.set_preset_mode' : 'switch.toggle' ]]]"
+              service_data: |
+                [[[
+                  if (!variables.ac.samsung) return { entity_id: variables.ac.eco };
+                  const p = states[variables.ac.climate]?.attributes?.preset_mode;
+                  return { entity_id: variables.ac.climate, preset_mode: p === 'wind_free' ? 'none' : 'wind_free' };
+                ]]]
+            styles:
+              button:
+                background: |
+                  [[[
+                    const active = variables.ac.samsung
+                      ? states[variables.ac.climate]?.attributes?.preset_mode === 'wind_free'
+                      : states[variables.ac.eco]?.state === 'on';
+                    return active ? 'var(--catppuccin-green, #a6da95)' : 'rgba(73, 77, 100, 0.85)';
+                  ]]]
+              icon:
+                color: |
+                  [[[
+                    const active = variables.ac.samsung
+                      ? states[variables.ac.climate]?.attributes?.preset_mode === 'wind_free'
+                      : states[variables.ac.eco]?.state === 'on';
+                    return active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
+                  ]]]
+          # Fan: tap cycles fan_mode; hold toggles swing
+          - icon: mdi:fan
+            tap_action:
+              action: call-service
+              service: climate.set_fan_mode
+              service_data: |
+                [[[
+                  const a = states[variables.ac.climate]?.attributes || {};
+                  const order = ['auto', 'low', 'medium', 'high', 'turbo'].filter(m => (a.fan_modes || []).includes(m));
+                  const next = order[(order.indexOf(a.fan_mode) + 1) % order.length] || 'auto';
+                  return { entity_id: variables.ac.climate, fan_mode: next };
+                ]]]
+            hold_action:
+              action: call-service
+              service: climate.set_swing_mode
+              service_data: |
+                [[[
+                  const s = states[variables.ac.climate]?.attributes?.swing_mode;
+                  const on = variables.ac.samsung ? 'both' : 'on';
+                  return { entity_id: variables.ac.climate, swing_mode: s === 'off' ? on : 'off' };
+                ]]]
+            styles:
+              button:
+                border-radius: 0 50% 50% 0
+              icon:
+                animation: "[[[ const s = states[variables.ac.climate]?.state; return s && !['off','unavailable','unknown'].includes(s) ? 'spin 2s linear infinite' : 'none' ]]]"
+    target:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          flex-direction: column
+          flex-wrap: nowrap
+          gap: 0
+        base_config:
+          ripple: none
+          styles:
+            button:
+              width: 40px
+              height: 40px
+              padding: 0
+              border-radius: 0
+              background: "rgba(73, 77, 100, 0.85)"
+            icon:
+              color: "var(--catppuccin-text, #cad3f5)"
+            name:
+              color: "var(--catppuccin-text, #cad3f5)"
+              font-size: 14px
+        buttons:
+          - icon: mdi:chevron-up
+            layout: icon
+            tap_action:
+              action: call-service
+              service: climate.set_temperature
+              service_data: |
+                [[[
+                  const a = states[variables.ac.climate]?.attributes || {};
+                  const base = typeof a.temperature === 'number' ? a.temperature : 23;
+                  return { entity_id: variables.ac.climate, temperature: Math.min(a.max_temp ?? 30, base + (a.target_temp_step || 1)) };
+                ]]]
+            styles:
+              button:
+                border-radius: 50% 50% 0 0
+          - layout: name
+            name: |
+              [[[
+                const t = states[variables.ac.climate]?.attributes?.temperature;
+                return typeof t === 'number' ? `${Math.round(t)}°` : '--';
+              ]]]
+          - icon: mdi:chevron-down
+            layout: icon
+            tap_action:
+              action: call-service
+              service: climate.set_temperature
+              service_data: |
+                [[[
+                  const a = states[variables.ac.climate]?.attributes || {};
+                  const base = typeof a.temperature === 'number' ? a.temperature : 23;
+                  return { entity_id: variables.ac.climate, temperature: Math.max(a.min_temp ?? 16, base - (a.target_temp_step || 1)) };
+                ]]]
+            styles:
+              button:
+                border-radius: 0 0 50% 50%

@@ -1,0 +1,8 @@
+# One position of the Casa AC carousel: the AC at index `slot` of sensor.ac_order (on ones first). Re-evaluated as states
+# change, so the carousel reorders itself. Variables: slot.
+ac_slot:
+  card:
+    type: custom:button-card
+    template: ac_card
+    variables_javascript: |-
+      return { climate: states['sensor.ac_order']?.attributes?.order?.[variables.slot] };

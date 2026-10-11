@@ -1,0 +1,128 @@
+# ==========================================================================
+# Events on Casa: a page per day (of the next 7) that has events, all of them; the list scrolls vertically
+# when they don't fit. The card itself is transparent: the frame is drawn 26px short of the area, so the
+# markers sit below it like the AC carousel's (css-swipe-card) and the frame ends level with the AC cards.
+# Variables: while_music (an entity: the carousel yields to the music card while it plays).
+# ==========================================================================
+events_carousel:
+  template:
+    - base_card
+    - anim
+  entity: sensor.events_today
+  # the ripple (hover/tap highlight) is square; other cards clip it with overflow: hidden, this one can't
+  # (its markers sit below the frame), so it gets the frame's shape and stops above the markers
+  # Text on the dashboard's type scale (as the tiles: title 15px, secondary 12-13px), the same at every width
+  extra_styles: |
+    ha-ripple { inset: 0 0 26px 0 !important; height: auto !important; border-radius: 24px; overflow: hidden; }
+    .ev-label { font-size: 13px; }
+    .ev-date { font-size: 30px; margin-bottom: 8px; }
+    .ev-rows { gap: 8px; }
+    .ev-when { font-size: 12px; }
+    .ev-title { font-size: 15px; }
+  # while_music: true = only while a speaker plays, false = only while none plays, unset = always (Casa shows the
+  # agenda in a different place on desktop depending on the media card)
+  variables:
+    while_music: null
+  triggers_update:
+    - media_player.living_room_speaker
+    - media_player.kids_bedroom_speaker
+    - media_player.sonos_move_speaker
+  show_name: false
+  show_icon: false
+  show_state: false
+  tap_action:
+    action: navigate
+    navigation_path: "#calendar"
+  styles:
+    card:
+      - display: |
+          [[[
+            if (variables.while_music == null) return 'block';
+            const playing = ['living_room', 'kids_bedroom', 'sonos_move']
+              .some((k) => states[`media_player.${k}_speaker`]?.state === 'playing');
+            return playing === variables.while_music ? 'block' : 'none';
+          ]]]
+      - height: 100%
+      - padding: 0
+      - background: none
+      - border: none
+      - overflow: visible
+    grid:
+      - grid-template-areas: "'body'"
+      - grid-template-rows: 1fr
+    custom_fields:
+      body:
+        - height: 100%
+        - width: 100%
+        - min-width: 0
+  custom_fields:
+    body: |-
+      [[[
+        const parse = (v) => v.includes('T') ? new Date(v) : new Date(...v.split('-').map((n, i) => i === 1 ? n - 1 : +n));
+        const pad = (n) => String(n).padStart(2, '0');
+        const hm = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const weekdays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const events = entity?.attributes?.upcoming || [];
+        const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+        // a page per day of the next 7 that has events (multi-day events show on every day they cover)
+        const byDay = [];
+        for (let d = 0; d < 7; d++) {
+          const start = new Date(day0); start.setDate(start.getDate() + d);
+          const end = new Date(start); end.setDate(end.getDate() + 1);
+          const items = events.filter((e) => parse(e.start) < end && parse(e.end) > start);
+          if (items.length) byDay.push({ d, start, items });
+        }
+        const frame = 'height: calc(100% - 26px); box-sizing: border-box; border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); background: rgba(36, 39, 58, 0.7); overflow: hidden;';
+        if (!byDay.length) {
+          return `<div style="${frame} display: flex; flex-direction: column; justify-content: center; padding: 0 16px; text-align: left;">
+            <div style="font-size: 20px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">Sem compromissos</div>
+            <div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">nos próximos 7 dias</div></div>`;
+        }
+        const pages = byDay.map(({ d, start, items }) => {
+          const label = d === 0 ? 'Hoje' : d === 1 ? 'Amanhã' : weekdays[start.getDay()];
+          // time above, the title wrapping over as many lines as it needs: readable, never cut
+          const rows = items.map((e) => {
+            const s = parse(e.start);
+            const when = e.all_day ? 'Dia inteiro' : s < start ? 'Até ' + hm(parse(e.end)) : hm(s);
+            return `<div style="min-width: 0;">
+              <div class="ev-when" style="font-weight: 600; color: var(--catppuccin-mauve, #c6a0f6);">${when}</div>
+              <div class="ev-title" style="font-weight: 600; line-height: 1.3; color: var(--catppuccin-text, #cad3f5); white-space: normal; overflow-wrap: anywhere;">${e.summary}</div></div>`;
+          }).join('');
+          return `<div class="ev-page" style="flex: 0 0 100%; scroll-snap-align: start; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; text-align: left; min-width: 0;">
+            <div class="ev-label" style="color: var(--catppuccin-subtext0, #a5adcb);">${label}</div>
+            <div class="ev-date" style="font-weight: 300; color: var(--catppuccin-text, #cad3f5); line-height: 1.1;">${start.getDate()} ${months[start.getMonth()]}</div>
+            <div class="ev-rows" style="flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column;">${rows}</div>
+          </div>`;
+        }).join('');
+        // markers as css-swipe-card draws the AC carousel's: 10px dots 10px apart, the active one 12px and mauve
+        const dots = byDay.length > 1
+          ? `<div id="ev-dots" style="height: 26px; display: flex; justify-content: center; align-items: center; gap: 10px;">${byDay.map((_, i) =>
+              `<span class="ev-dot" data-i="${i}" style="border-radius: 50%; cursor: pointer; transition: all 0.3s ease; width: ${i ? '10px' : '12px'}; height: ${i ? '10px' : '12px'}; background: ${i ? 'var(--catppuccin-surface1, #494d64)' : 'var(--catppuccin-mauve, #c6a0f6)'};"></span>`).join('')}</div>`
+          : '';
+        setTimeout(() => {
+          const root = this.shadowRoot;
+          const track = root && root.querySelector('#ev-track');
+          if (!track || track.dataset.bound) return;
+          track.dataset.bound = '1';
+          const mark = (i) => root.querySelectorAll('.ev-dot').forEach((d, k) => {
+            d.style.width = d.style.height = k === i ? '12px' : '10px';
+            d.style.background = k === i ? 'var(--catppuccin-mauve, #c6a0f6)' : 'var(--catppuccin-surface1, #494d64)';
+          });
+          track.addEventListener('scroll', () => mark(Math.round(track.scrollLeft / track.clientWidth)), { passive: true });
+          const bar = root.querySelector('#ev-dots');
+          if (bar) {
+            // taps on the markers change page, they don't open the calendar pop-up
+            for (const t of ['click', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'touchstart', 'touchend']) {
+              bar.addEventListener(t, (ev) => ev.stopPropagation());
+            }
+            bar.addEventListener('click', (ev) => {
+              const dot = ev.target.closest('.ev-dot');
+              if (dot) track.scrollTo({ left: +dot.dataset.i * track.clientWidth, behavior: 'smooth' });
+            });
+          }
+        }, 0);
+        return `<div style="height: 100%; display: flex; flex-direction: column;">
+          <div id="ev-track" style="${frame} display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch;">${pages}</div>
+          ${dots}</div>`;
+      ]]]

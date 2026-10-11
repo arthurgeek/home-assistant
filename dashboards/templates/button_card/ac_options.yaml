@@ -1,0 +1,124 @@
+# ==========================================================================
+# AC option row (Modo / Recursos / Ventilação / Direção do ar): one button per value the AC itself
+# reports (hvac_modes, preset_modes, fan_modes, swing_modes); hidden when the AC has none.
+# Variables: attribute (hvac_mode, preset_mode, fan_mode or swing_mode); the AC is the card's entity.
+# ==========================================================================
+ac_options:
+  template: ac_device
+  variables:
+    attribute: hvac_mode
+    rows:
+      hvac_mode:
+        list: hvac_modes
+        title: Modo
+        icon: mdi:power-settings
+        service: climate.set_hvac_mode
+        order: ["off", cool, dry, fan_only, heat, auto, heat_cool]
+        values:
+          "off": [Desligado, 'mdi:power']
+          cool: [Resfriar, 'mdi:snowflake']
+          dry: [Desumidificar, 'mdi:water-percent']
+          fan_only: [Ventilar, 'mdi:fan']
+          heat: [Aquecer, 'mdi:fire']
+          auto: [Auto, 'mdi:thermostat-auto']
+          heat_cool: [Auto, 'mdi:thermostat-auto']
+      preset_mode:
+        list: preset_modes
+        title: Recursos
+        icon: mdi:tune-variant
+        service: climate.set_preset_mode
+        order: [none, wind_free, sleep, wind_free_sleep, quiet, boost, smart]
+        values:
+          none: [Normal, 'mdi:circle-outline']
+          wind_free: [WindFree, 'mdi:weather-windy']
+          sleep: [Sono, 'mdi:sleep']
+          wind_free_sleep: [WindFree Sono, 'mdi:weather-night']
+          quiet: [Silencioso, 'mdi:volume-low']
+          boost: [Turbo, 'mdi:rocket-launch']
+          smart: [Inteligente, 'mdi:brain']
+      fan_mode:
+        list: fan_modes
+        title: Ventilação
+        icon: mdi:fan
+        service: climate.set_fan_mode
+        order: [auto, low, medium, high, turbo]
+        values:
+          auto: [Auto, 'mdi:fan-auto']
+          low: [Baixo, 'mdi:fan-speed-1']
+          medium: [Médio, 'mdi:fan-speed-2']
+          high: [Alto, 'mdi:fan-speed-3']
+          turbo: [Turbo, 'mdi:fan-plus']
+      swing_mode:
+        list: swing_modes
+        title: Direção do ar
+        icon: mdi:arrow-all
+        service: climate.set_swing_mode
+        order: ["off", "on", vertical, horizontal, both]
+        values:
+          "off": [Parado, 'mdi:arrow-collapse-vertical']
+          "on": [Oscilar, 'mdi:arrow-up-down']
+          vertical: [Vertical, 'mdi:arrow-up-down']
+          horizontal: [Horizontal, 'mdi:arrow-left-right']
+          both: [Ambos, 'mdi:arrow-all']
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  show_state: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - background: none
+      - border: none
+      - padding: 4px 0
+      - display: |
+          [[[ return (states[variables.ac.climate]?.attributes?.[variables.rows[variables.attribute].list] || []).length ? 'block' : 'none'; ]]]
+    grid:
+      - grid-template-areas: "'title' 'row'"
+      - row-gap: 10px
+    custom_fields:
+      title:
+        - justify-self: stretch
+  custom_fields:
+    title: |
+      [[[
+        const row = variables.rows[variables.attribute];
+        return `<div style="display: flex; align-items: center; gap: 16px; color: var(--catppuccin-text, #cad3f5);">
+          <ha-icon icon="${row.icon}" style="--mdc-icon-size: 24px;"></ha-icon>
+          <span style="font-size: 18px; font-weight: 600; white-space: nowrap;">${row.title}</span>
+          <span style="flex: 1; height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.18);"></span></div>`;
+      ]]]
+    row:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          flex-wrap: wrap
+          gap: 8px
+          justify-content: flex-start
+        buttons: |-
+          [[[
+            const row = variables.rows[variables.attribute];
+            const c = states[variables.ac.climate];
+            const current = variables.attribute === 'hvac_mode' ? c?.state : c?.attributes?.[variables.attribute];
+            const rank = (v) => { const i = row.order.indexOf(v); return i === -1 ? 99 : i; };
+            const list = [...(c?.attributes?.[row.list] || [])].sort((a, b) => rank(a) - rank(b));
+            if (!list.length) return [{ layout: 'icon', icon: 'mdi:circle-small', styles: { button: { display: 'none' } } }];
+            return list.map((value) => {
+              const active = current === value;
+              const [label, icon] = row.values[value] || [value, 'mdi:circle-medium'];
+              // WindFree Sleep asks for Good Sleep's duration first (chooser pop-up)
+              const tap = variables.attribute === 'preset_mode' && value === 'wind_free_sleep' && variables.ac.area
+                ? { action: 'navigate', navigation_path: `#ac_${variables.ac.area}_sleep` }
+                : { action: 'call-service', service: row.service,
+                    service_data: { entity_id: variables.ac.climate, [variables.attribute]: value } };
+              return {
+                name: label, icon, layout: 'icon|name', ripple: 'none', tap_action: tap,
+                styles: {
+                  button: { padding: '8px 14px', 'border-radius': '18px',
+                            background: active ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.6)' },
+                  name: { 'font-size': '13px', color: active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' },
+                  icon: { color: active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' },
+                },
+              };
+            });
+          ]]]

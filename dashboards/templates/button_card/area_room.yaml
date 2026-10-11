@@ -1,0 +1,27 @@
+# ==========================================================================
+# What an area holds, for the room card, pop-up header and presence section: its name, icon and temperature (the area's
+# temperature sensor, else its AC's reading), and the lights, ACs and occupancy sensor placed in it, directly or through
+# their device. A card using this template is given `area` (id) and reads `variables.room`.
+# ==========================================================================
+area_room:
+  variables:
+    area: null
+    room: |-
+      [[[
+        const area = hass.areas[variables.area] || {};
+        const here = (id) => {
+          const e = hass.entities[id];
+          return states[id] && e && !e.hidden && (e.area_id ?? hass.devices[e.device_id]?.area_id) === variables.area;
+        };
+        const ids = Object.keys(hass.entities).filter(here).sort();
+        const of = (domain) => ids.filter((id) => id.startsWith(domain + '.'));
+        const climates = of('climate');
+        let temperature = parseFloat(states[area.temperature_entity_id]?.state);
+        if (isNaN(temperature)) temperature = parseFloat(climates.map((id) => states[id].attributes.current_temperature).find((t) => t !== undefined));
+        return {
+          name: area.name, icon: area.icon || 'mdi:sofa',
+          entities: ids, lights: of('light'), climates,
+          temperature: isNaN(temperature) ? null : temperature,
+          presence: ids.find((id) => id.startsWith('binary_sensor.') && states[id].attributes.device_class === 'occupancy'),
+        };
+      ]]]

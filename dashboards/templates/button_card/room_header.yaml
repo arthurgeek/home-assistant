@@ -1,0 +1,72 @@
+# ==========================================================================
+# Pop-up header for an area: its icon, name, and under it the temperature and lights on, each only if the area has one.
+# Variables: icon (default: the area's). Tapping the close button leaves the pop-up.
+# ==========================================================================
+room_header:
+  template: area_room
+  variables:
+    icon: null
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+    grid:
+      - grid-template-areas: "'title close'"
+      - grid-template-columns: 1fr 56px
+      - column-gap: 12px
+    custom_fields:
+      title:
+        - justify-self: stretch
+      close:
+        - justify-self: end
+  custom_fields:
+    title: |
+      [[[
+        const room = variables.room;
+        const on = room.lights.filter((id) => states[id]?.state === 'on').length;
+        const info = [
+          room.temperature === null ? null : room.temperature.toFixed(1).replace('.', ',') + ' °C',
+          room.lights.length ? (on ? (on === 1 ? '1 luz acesa' : on + ' luzes acesas') : 'Luzes apagadas') : null,
+        ].filter(Boolean).join(' · ');
+        return `<div style="display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 12px; border-radius: 28px;
+                            background: rgba(24, 25, 38, 0.55); text-align: left;">
+          <div style="width: 42px; height: 42px; border-radius: 50%; background: rgba(36, 39, 58, 0.9); flex: none;
+                      display: flex; align-items: center; justify-content: center;">
+            <ha-icon icon="${variables.icon || room.icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-lavender, #b7bdf8);"></ha-icon></div>
+          <div style="min-width: 0;"><div style="font-size: 16px; font-weight: 700; color: var(--catppuccin-lavender, #b7bdf8);">${room.name || '--'}</div>
+            ${info ? `<div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">${info}</div>` : ''}</div></div>`;
+      ]]]
+    close:
+      card:
+        type: custom:button-card
+        show_name: false
+        show_icon: false
+        tap_action:
+          action: navigate
+          navigation_path: "[[[ return location.pathname ]]]"
+        styles:
+          card:
+            - width: 56px
+            - height: 56px
+            - padding: 0
+            - border-radius: 50%
+            - border: none
+            - box-shadow: none
+            - background: rgba(24, 25, 38, 0.55)
+          grid:
+            - grid-template-areas: "'x'"
+            - grid-template-columns: 1fr
+            - grid-template-rows: 1fr
+          custom_fields:
+            x:
+              - justify-self: center
+              - align-self: center
+        custom_fields:
+          x: '[[[ return `<ha-icon icon="mdi:close" style="--mdc-icon-size: 26px; color: var(--catppuccin-lavender, #b7bdf8); display: flex;"></ha-icon>` ]]]'

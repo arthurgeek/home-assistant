@@ -1,0 +1,53 @@
+# ==========================================================================
+# Heading of a pop-up section, like Bubble's separator, shown only when the area (or floor) holds an entity of `domain`
+# (and `device_class`, if given). Variables: area (id) or floor (id; its name and icon are the heading's), title, icon,
+# domain, device_class.
+# ==========================================================================
+section_heading:
+  variables:
+    area: null
+    floor: null
+    title: ""
+    icon: mdi:circle
+    domain: ""
+    device_class: null
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - display: |
+          [[[
+            const scope = (id) => {
+              const e = hass.entities[id];
+              const area = e?.area_id ?? hass.devices[e?.device_id]?.area_id;
+              return variables.floor ? hass.areas[area]?.floor_id === variables.floor : area === variables.area;
+            };
+            const found = Object.keys(hass.entities).some((id) => states[id] && !hass.entities[id].hidden && scope(id)
+              && id.startsWith(variables.domain + '.')
+              && (!variables.device_class || states[id].attributes.device_class === variables.device_class));
+            return found ? 'block' : 'none';
+          ]]]
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+    grid:
+      - grid-template-areas: "'heading'"
+      - grid-template-columns: 1fr
+    custom_fields:
+      heading:
+        - justify-self: stretch
+  custom_fields:
+    heading: |-
+      [[[
+        const floor = hass.floors?.[variables.floor];
+        const title = variables.title || floor?.name || '';
+        const icon = variables.floor ? (floor?.icon || 'mdi:home') : variables.icon;
+        return `<div style="display: flex; align-items: center; gap: 22px; padding: 0 4px;">
+          <ha-icon icon="${icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-text, #cad3f5);"></ha-icon>
+          <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${title}</span>
+          <div style="flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.18);"></div></div>`;
+      ]]]

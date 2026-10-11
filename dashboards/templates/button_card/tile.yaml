@@ -1,0 +1,79 @@
+# ==========================================================================
+# Small tile: round icon cell + big label + small sublabel
+# ==========================================================================
+tile:
+  template:
+    - base_card
+    - anim
+  variables:
+    icon: mdi:help
+    label: ""
+    sublabel: ""
+    accent: "var(--catppuccin-mauve, #c6a0f6)"
+    active: false
+    animation: none
+    # Optional quick-action button on the right (the tile's own tap opens its pop-up): a tap_action
+    # config, and its icon. Without an action the button is hidden.
+    action: null
+    action_icon: mdi:gesture-tap
+    # Filled (in action_accent, else the tile's accent), e.g. a dose already taken
+    action_active: false
+    action_accent: null
+  show_name: false
+  show_icon: false
+  show_label: false
+  show_state: false
+  styles:
+    card:
+      - height: 100%
+      - padding: 14px 16px  # clear of the 24px rounded corners
+      - animation: "[[[ return variables.animation ]]]"
+    # Icon and quick button on top, text across the whole tile below
+    grid:
+      - grid-template-areas: "'badge action' 'text text'"
+      - grid-template-columns: 1fr auto
+      - grid-template-rows: auto 1fr
+      - row-gap: 4px
+    custom_fields:
+      badge:
+        - justify-self: start
+      text:
+        - justify-self: stretch
+        - min-width: 0
+      action:
+        - display: "[[[ return variables.action ? 'block' : 'none' ]]]"
+  # Own markup for icon and text: button-card's icon sizes wrongly in hidden tabs, and its label/name
+  # styling didn't match the other custom-markup cards.
+  custom_fields:
+    badge: |
+      [[[
+        const bg = variables.active ? variables.accent : 'rgba(73, 77, 100, 0.6)';
+        const fg = variables.active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
+        return `<div style="width: 36px; height: 36px; border-radius: 50%; background: ${bg}; display: flex; align-items: center; justify-content: center;">
+          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 18px; color: ${fg};"></ha-icon></div>`;
+      ]]]
+    text: |
+      [[[
+        const line = 'white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        return `<div style="text-align: left;">
+          <div style="font-size: 15px; font-weight: 600; color: var(--catppuccin-text, #cad3f5); ${line}">${variables.label}</div>
+          <div style="font-size: 12px; margin-top: 3px; color: var(--catppuccin-subtext0, #a5adcb); ${line}">${variables.sublabel}</div></div>`;
+      ]]]
+    action:
+      card:
+        type: custom:paper-buttons-row
+        buttons:
+          - icon: "[[[ return variables.action_icon ]]]"
+            layout: icon
+            ripple: none
+            tap_action: "[[[ return variables.action ]]]"
+            styles:
+              button:
+                width: 34px
+                height: 34px
+                padding: 0
+                border-radius: 50%
+                background: "[[[ return variables.action_active ? (variables.action_accent || variables.accent) : 'rgba(73, 77, 100, 0.85)' ]]]"
+              icon:
+                color: "[[[ return variables.action_active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                --mdc-icon-size: 18px

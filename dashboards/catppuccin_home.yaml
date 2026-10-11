@@ -1,5 +1,5 @@
-button_card_templates: !include templates/button_card_templates.yaml
-streamline_templates: !include streamline_templates.yaml
+button_card_templates: !include_dir_merge_named templates/button_card
+streamline_templates: !include_dir_merge_named templates/streamline
 
 kiosk_mode:
   hide_header: true

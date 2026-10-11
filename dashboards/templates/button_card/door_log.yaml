@@ -1,0 +1,45 @@
+# ==========================================================================
+# Main door access log (sensor.main_door_log): when, who, how; denials in red. Like UniFi Access's own log.
+# It has no variables.
+# ==========================================================================
+door_log:
+  template:
+    - base_card
+  show_name: false
+  show_icon: false
+  show_state: false
+  tap_action:
+    action: none
+  styles:
+    grid:
+      - grid-template-areas: "'log'"
+    custom_fields:
+      log:
+        - justify-self: stretch
+        - min-width: 0
+  custom_fields:
+    log: |-
+      [[[
+        const entries = entity?.attributes?.entries || [];
+        const how = { REMOTE_THROUGH_UAH: ['mdi:home-assistant', 'Home Assistant'], NFC: ['mdi:card-account-details-outline', 'cartão'],
+                      PIN_CODE: ['mdi:dialpad', 'senha'], MOBILE_TAP: ['mdi:cellphone-nfc', 'celular'], MOBILE_UNLOCK: ['mdi:cellphone', 'app'],
+                      FACE: ['mdi:face-recognition', 'rosto'], QR_CODE: ['mdi:qrcode', 'QR code'], BUTTON: ['mdi:gesture-tap-button', 'botão'] };
+        const pad = (n) => String(n).padStart(2, '0');
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const day = (d) => { const d0 = new Date(d); d0.setHours(0, 0, 0, 0); const n = Math.round((today - d0) / 86400000);
+          return n === 0 ? 'Hoje' : n === 1 ? 'Ontem' : d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' }); };
+        if (!entries.length) return `<div style="font-size: 14px; color: var(--catppuccin-subtext0, #a5adcb); text-align: left;">Nenhum acesso registrado ainda</div>`;
+        let last = '';
+        const rows = entries.map((e) => {
+          const d = new Date(e.time);
+          const [icon, text] = how[e.how] || ['mdi:key-variant', (e.how || '').toLowerCase()];
+          const head = day(d) !== last ? `<div style="font-size: 13px; font-weight: 600; color: var(--catppuccin-subtext0, #a5adcb); margin: ${last ? '12px' : '0'} 0 4px;">${(last = day(d))}</div>` : '';
+          const color = e.granted ? 'var(--catppuccin-text, #cad3f5)' : 'var(--catppuccin-red, #ed8796)';
+          return `${head}<div style="display: flex; align-items: center; gap: 12px; padding: 6px 0;">
+            <div style="font-size: 14px; font-variant-numeric: tabular-nums; color: var(--catppuccin-subtext0, #a5adcb); width: 42px;">${pad(d.getHours())}:${pad(d.getMinutes())}</div>
+            <div style="flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: ${color}; white-space: normal;">${e.who || '--'}${e.granted ? '' : ' · negado'}</div>
+            <ha-icon icon="${icon}" title="${text}" style="--mdc-icon-size: 20px; color: var(--catppuccin-overlay2, #939ab7);"></ha-icon></div>`;
+        }).join('');
+        return `<div style="text-align: left;">
+          <div style="font-size: 16px; font-weight: 600; color: var(--catppuccin-text, #cad3f5); margin-bottom: 8px;">Atividade</div>${rows}</div>`;
+      ]]]

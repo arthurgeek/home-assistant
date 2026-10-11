@@ -1,0 +1,29 @@
+# ==========================================================================
+# Shared animations (pulse, glow, ...) other templates switch on from their state; they stop under reduced motion.
+# Used through `template: anim`; it has no variables.
+# ==========================================================================
+anim:
+  extra_styles: |-
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg) translate(0, 0); }
+      20% { transform: rotate(-6deg) translate(-2px, 1px); }
+      40% { transform: rotate(-10deg) translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      80% { transform: rotate(10deg) translate(2px, -2px); }
+    }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(237, 135, 150, 0.0); }
+      50% { box-shadow: 0 0 0 6px rgba(237, 135, 150, 0.45); }
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 0 rgba(238, 212, 159, 0); }
+      50% { box-shadow: 0 0 16px rgba(238, 212, 159, 0.6); }
+    }
+    @keyframes fade-up { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    ha-card { animation: fade-up 250ms ease-out backwards; }
+    ha-card:active { transform: scale(0.97); transition: transform 120ms ease; }
+    @media (prefers-reduced-motion: reduce) {
+      *, ha-card { animation: none !important; transition: none !important; }
+    }

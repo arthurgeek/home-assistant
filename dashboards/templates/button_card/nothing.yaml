@@ -1,0 +1,7 @@
+# Renders nothing: default for optional card slots in streamline templates.
+nothing:
+  show_name: false
+  show_icon: false
+  styles:
+    card:
+      - display: none

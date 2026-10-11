@@ -1,0 +1,37 @@
+# The Sonos card (Casa while music plays, and the media pop-up), on the Music Assistant players: they carry the
+# art and title (e.g. Spotify via MA) and group via MA. Album art blurred behind the controls.
+sonos:
+  card:
+    type: custom:sonos-card
+    # take the Music Assistant players (the card defaults to Sonos-platform ones) and search through MA;
+    # exclusive with showNonSonosPlayers / useMusicAssistant
+    entityPlatform: music_assistant
+    entities:
+      - media_player.living_room_ma
+      - media_player.kids_bedroom_ma
+      - media_player.sonos_move_ma
+    # player, choose a playing group, group/ungroup, the queue (mass_queue), search (via MA), browse,
+    # per-speaker volumes
+    sections:
+      - player
+      - groups
+      - grouping
+      - queue
+      - search
+      - media browser
+      - volumes
+    adjustVolumeRelativeToMainPlayer: true
+    # MA fetches Spotify results 10 per request, one request after another, and Spotify throttles bursts: 10
+    # results is one request per type, and tracks only by default (the card otherwise searches 5 types)
+    search:
+      searchLimit: 10
+      defaultMediaType: track
+      autoSearchDebounceMs: 200  # the card waits 1 s after the last key by default
+    player:
+      artworkAsBackground: true
+      artworkAsBackgroundBlur: 10
+      controlsAndHeaderBackgroundOpacity: 0.7
+    card_mod:
+      style: |-
+        ha-card { border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); overflow: hidden;
+                  box-shadow: none; background: rgba(36, 39, 58, 0.7); }

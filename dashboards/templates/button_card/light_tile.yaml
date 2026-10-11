@@ -1,0 +1,48 @@
+# ==========================================================================
+# Light tile: a light as a tile, named after its HA area (and its own name when the area has several lights); the icon
+# toggles it, the rest of the card opens it. The light is the card's entity.
+# ==========================================================================
+light_tile:
+  template: tile
+  variables:
+    icon: "[[[ return entity?.state === 'on' ? 'mdi:lightbulb-on' : 'mdi:lightbulb-outline' ]]]"
+    label: "[[[ return entity?.state === 'on' ? 'Acesa' : entity?.state === 'off' ? 'Apagada' : '--' ]]]"
+    sublabel: |
+      [[[
+        const reg = hass.entities?.[entity?.entity_id];
+        const areaId = reg?.area_id || hass.devices?.[reg?.device_id]?.area_id;
+        const area = hass.areas?.[areaId]?.name || '';
+        const lights = Object.keys(hass.entities).filter((id) => id.startsWith('light.') && states[id]
+          && (hass.entities[id].area_id || hass.devices?.[hass.entities[id].device_id]?.area_id) === areaId);
+        return [area, lights.length > 1 ? entity.attributes.friendly_name : ''].filter(Boolean).join(' · ');
+      ]]]
+    active: "[[[ return entity?.state === 'on' ]]]"
+    accent: "var(--catppuccin-yellow, #eed49f)"
+  styles:
+    card:
+      - height: 110px  # the tiles' height on Casa
+  custom_fields:
+    # the icon is the switch; tapping the rest of the card opens the entity
+    badge:
+      card:
+        type: custom:paper-buttons-row
+        buttons:
+          - entity: "[[[ return entity.entity_id ]]]"
+            icon: "[[[ return variables.icon ]]]"
+            layout: icon
+            ripple: none
+            tap_action:
+              action: toggle
+              haptic: light
+            styles:
+              button:
+                width: 36px
+                height: 36px
+                padding: 0
+                border-radius: 50%
+                background: "[[[ return variables.active ? variables.accent : 'rgba(73, 77, 100, 0.6)' ]]]"
+              icon:
+                color: "[[[ return variables.active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                --mdc-icon-size: 18px
+  tap_action:
+    action: more-info

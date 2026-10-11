@@ -1,0 +1,66 @@
+# ==========================================================================
+# Live activity row (appliance running, vacuum cleaning, now playing)
+# Variables: icon, image, title, subtitle, accent, animation, play_pause_entity (shows a play/pause button).
+# ==========================================================================
+active_row:
+  template:
+    - base_card
+    - anim
+  variables:
+    icon: mdi:information
+    image: null
+    title: ""
+    subtitle: ""
+    accent: "linear-gradient(135deg, rgba(198, 160, 246, 0.85), rgba(245, 189, 230, 0.85))"
+    animation: none
+    play_pause_entity: null
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  styles:
+    card:
+      - height: 70px
+      - padding: 0 12px 0 8px
+      - background: "[[[ return variables.accent ]]]"
+    grid:
+      - grid-template-areas: "'badge text action'"
+      - grid-template-columns: 58px 1fr min-content
+    custom_fields:
+      text:
+        - justify-self: start
+        - text-align: left
+        - min-width: 0
+  custom_fields:
+    badge: |
+      [[[
+        const inner = variables.image
+          ? `<img src="${variables.image}" style="width: 46px; height: 46px; border-radius: 50%; object-fit: cover;">`
+          : `<ha-icon icon="${variables.icon}" style="--mdc-icon-size: 22px; color: var(--catppuccin-base, #24273a); animation: ${variables.animation};"></ha-icon>`;
+        return `<div style="width: 46px; height: 46px; border-radius: 50%; background: rgba(255, 255, 255, 0.35); display: flex; align-items: center; justify-content: center;">${inner}</div>`;
+      ]]]
+    text: |
+      [[[
+        return `<div style="font-size: 15px; font-weight: 600; color: var(--catppuccin-base, #24273a); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${variables.title}</div>
+                <div style="font-size: 12px; color: rgba(36, 39, 58, 0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${variables.subtitle}</div>`;
+      ]]]
+    action:
+      card:
+        type: custom:paper-buttons-row
+        buttons:
+          - layout: icon
+            ripple: circle
+            icon: "[[[ return states[variables.play_pause_entity]?.state === 'playing' ? 'mdi:pause' : 'mdi:play' ]]]"
+            tap_action:
+              action: call-service
+              service: media_player.media_play_pause
+              service_data:
+                entity_id: "[[[ return variables.play_pause_entity ]]]"
+            styles:
+              button:
+                display: "[[[ return variables.play_pause_entity ? 'flex' : 'none' ]]]"
+                width: 40px
+                height: 40px
+                border-radius: 50%
+                background: "rgba(255, 255, 255, 0.35)"
+              icon:
+                color: "var(--catppuccin-base, #24273a)"

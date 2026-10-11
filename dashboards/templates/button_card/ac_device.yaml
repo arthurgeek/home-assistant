@@ -1,0 +1,26 @@
+# ==========================================================================
+# What an air conditioner is made of, for its card and the controls in its pop-up: the climate (the card's entity, or
+# `climate`), its area, whether it is a Samsung (the `samsung` label), the area's temperature and humidity sensors, and
+# the entities of its own device (power, energy today, energy saving, display light, off timer, filter hours). A card
+# using this template reads `variables.ac`.
+# ==========================================================================
+ac_device:
+  variables:
+    climate: null
+    ac: |-
+      [[[
+        const id = variables.climate || entity?.entity_id;
+        const reg = hass.entities[id] || {};
+        const area = reg.area_id ?? hass.devices[reg.device_id]?.area_id;
+        const info = hass.areas[area] || {};
+        const mine = Object.keys(hass.entities).filter((e) => hass.entities[e].device_id === reg.device_id && states[e]);
+        const find = (domain, test) => mine.find((e) => e.startsWith(domain + '.') && test(e));
+        return {
+          climate: id, area,
+          samsung: (reg.labels || []).includes('samsung'),
+          temperature: info.temperature_entity_id, humidity: info.humidity_entity_id,
+          power: find('sensor', (e) => states[e].attributes.device_class === 'power'),
+          energyToday: find('sensor', (e) => /_energy_today$/.test(e)),
+          eco: find('switch', (e) => /energy_saving$/.test(e)),
+        };
+      ]]]

@@ -1,0 +1,109 @@
+# Room pop-up. Variables: key (the area id), extra_content (cards after the generated ones, for what the area's
+# entities can't tell, e.g. a speaker or the washer). The header, presence, lights, AC and temperature history are all
+# found from the area, and each section is absent when the area has nothing for it.
+room_popup:
+  default:
+    - extra_content:
+        - type: custom:button-card
+          template: nothing
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#[[key]]"
+    show_header: false
+    bg_blur: 16
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
+      - type: custom:button-card
+        template: section_heading
+        variables:
+          area: "[[key]]"
+          title: Presença
+          icon: mdi:motion-sensor
+          domain: binary_sensor
+          device_class: occupancy
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: binary_sensor
+              attributes:
+                device_class: occupancy
+              options:
+                type: custom:bubble-card
+                card_type: button
+                button_type: state
+                name: Presença
+                icon: mdi:motion-sensor
+      - type: custom:button-card
+        template: section_heading
+        variables:
+          area: "[[key]]"
+          title: Iluminação
+          icon: mdi:lightbulb
+          domain: light
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: horizontal-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: light
+              options:
+                type: custom:bubble-card
+                card_type: button
+                button_type: state
+                tap_action:
+                  action: toggle
+                button_action:
+                  tap_action:
+                    action: more-info
+      - type: custom:button-card
+        template: section_heading
+        variables:
+          area: "[[key]]"
+          title: Climatização
+          icon: mdi:air-conditioner
+          domain: climate
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: climate
+              options:
+                type: vertical-stack
+                cards:
+                  - type: custom:button-card
+                    template: ac_card
+                    entity: this.entity_id
+                  - type: custom:streamline-card
+                    template: history_graph
+                    variables:
+                      area: "[[key]]"
+                      climate: this.entity_id
+      - type: vertical-stack
+        cards: "[[extra_content]]"

@@ -1,0 +1,12 @@
+# A media player as a Bubble media card. Variables: entity, name, icon, layout (normal | large).
+speaker_card:
+  default:
+    - layout: normal
+  card:
+    type: custom:bubble-card
+    card_type: media-player
+    entity: "[[entity]]"
+    name: "[[name]]"
+    icon: "[[icon]]"
+    cover_background: true
+    card_layout: "[[layout]]"

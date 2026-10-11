@@ -1,0 +1,123 @@
+# ==========================================================================
+# Person card: avatar + status badge, phone chips, relative time
+# Variables: person (person entity), presence (input_select with the presence state), color, phone (object-id
+# prefix of the phone's sensors, e.g. suellens_phone).
+# ==========================================================================
+person_card:
+  template:
+    - base_card
+    - anim
+  variables:
+    person: ""
+    presence: ""
+    color: "var(--catppuccin-blue, #8aadf4)"
+    phone: ""  # object-id prefix of the phone sensors, e.g. suellens_phone
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: more-info
+    entity: "[[[ return variables.person ]]]"
+  styles:
+    card:
+      - height: 100%
+      - padding: 14px
+    grid:
+      - grid-template-areas: "'avatar status' 'chips chips' 'ago ago'"
+      - grid-template-columns: 68px 1fr
+      # sized by its content, with fixed gaps between avatar, chips and "há …"
+      - grid-template-rows: 68px auto auto
+      - row-gap: 12px
+      - column-gap: 12px
+    custom_fields:
+      avatar:
+        - position: relative
+        - width: 64px
+        - height: 64px
+        - overflow: visible
+      status:
+        - justify-self: start
+        - align-self: center
+        - text-align: left
+      chips:
+        - justify-self: start
+        - align-self: center
+      ago:
+        - justify-self: start
+        - font-size: 12px
+        - color: var(--catppuccin-subtext0,  #a5adcb)
+  custom_fields:
+    avatar: |
+      [[[
+        const p = states[variables.person];
+        const presence = states[variables.presence]?.state;
+        const home = presence ? ['Home', 'Just Arrived'].includes(presence) : p?.state === 'home';
+        const badge = {
+          'Just Arrived': ['mdi:home-import-outline', 'var(--catppuccin-green, #a6da95)'],
+          'Home': ['mdi:home', 'var(--catppuccin-green, #a6da95)'],
+          'Just Left': ['mdi:exit-run', 'var(--catppuccin-peach, #f5a97f)'],
+          'Away': ['mdi:map-marker', 'var(--catppuccin-overlay1, #8087a2)'],
+          'Extended Away': ['mdi:airplane', 'var(--catppuccin-overlay1, #8087a2)'],
+        }[presence] || (home ? ['mdi:home', 'var(--catppuccin-green, #a6da95)'] : ['mdi:map-marker', 'var(--catppuccin-overlay1, #8087a2)']);
+        const pic = p?.attributes?.entity_picture;
+        const face = pic
+          ? `<img src="${pic}" style="width: 56px; height: 56px; border-radius: 50%; object-fit: cover;">`
+          : `<div style="width: 56px; height: 56px; border-radius: 50%; background: ${variables.color}; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: var(--catppuccin-base, #24273a);">${(p?.attributes?.friendly_name || "?").charAt(0)}</div>`;
+        const pulse = presence === 'Just Arrived' ? 'animation: pulse 1.6s ease-in-out infinite;' : '';
+        return `<div style="position: relative; width: 64px; height: 64px;">
+          <div style="position: absolute; left: 0; bottom: 0;">${face}</div>
+          <div style="position: absolute; top: 0; right: 0; width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%;
+                      background: ${badge[1]}; border: 3px solid #2a2d40; display: flex; align-items: center; justify-content: center; ${pulse}">
+            <ha-icon icon="${badge[0]}" style="--mdc-icon-size: 12px; color: var(--catppuccin-base, #24273a); display: flex;"></ha-icon>
+          </div></div>`;
+      ]]]
+    status: |
+      [[[
+        const p = states[variables.person];
+        const presence = states[variables.presence]?.state;
+        const zone = p && !['home', 'not_home', 'unknown', 'unavailable'].includes(p.state) ? p.state : null;
+        let text = {
+          'Just Arrived': 'Acabou de chegar', 'Home': 'Em casa', 'Just Left': 'Acabou de sair',
+          'Away': zone || 'Fora', 'Extended Away': 'Viajando',
+        }[presence];
+        if (!text) text = p?.state === 'home' ? 'Em casa' : (zone || 'Fora');
+        return `<div style="font-size: 15px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${p?.attributes?.friendly_name || ''}</div>
+                <div style="font-size: 13px; margin-top: 2px; color: var(--catppuccin-subtext0, #a5adcb);">${text}</div>`;
+      ]]]
+    chips: |
+      [[[
+        const chip = (inner) => `<div style="display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 14px; background: rgba(73, 77, 100, 0.55); font-size: 12px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${inner}</div>`;
+        const icon = (i, c) => `<ha-icon icon="${i}" style="--mdc-icon-size: 16px; color: ${c};"></ha-icon>`;
+        const out = [];
+        const lvl = parseFloat(states[`sensor.${variables.phone}_battery_level`]?.state);
+        if (!isNaN(lvl)) {
+          const step = Math.round(lvl / 10) * 10;
+          const bi = step >= 100 ? 'mdi:battery' : step < 10 ? 'mdi:battery-outline' : `mdi:battery-${step}`;
+          const bc = lvl >= 50 ? 'var(--catppuccin-green, #a6da95)' : lvl >= 20 ? 'var(--catppuccin-yellow, #eed49f)' : 'var(--catppuccin-red, #ed8796)';
+          out.push(chip(`${icon(bi, bc)}${Math.round(lvl)}%`));
+        }
+        const bs = states[`sensor.${variables.phone}_battery_state`]?.state;
+        if (bs) {
+          const charging = ['charging', 'full'].includes(bs);
+          out.push(chip(icon(charging ? 'mdi:power-plug' : 'mdi:power-plug-off', charging ? 'var(--catppuccin-blue, #8aadf4)' : 'var(--catppuccin-overlay1, #8087a2)')));
+        }
+        const net = states[`sensor.${variables.phone}_network_type`]?.state;
+        if (net && !['unknown', 'unavailable'].includes(net)) {
+          out.push(chip(net === 'wifi'
+            ? icon('mdi:wifi', 'var(--catppuccin-green, #a6da95)')
+            : icon('mdi:signal-cellular-3', 'var(--catppuccin-red, #ed8796)')));
+        }
+        return `<div style="display: flex; gap: 6px;">${out.join('')}</div>`;
+      ]]]
+    ago: |-
+      [[[
+        const s = states[variables.person];
+        if (!s) return '';
+        const sec = Math.max(0, (Date.now() - new Date(s.last_updated).getTime()) / 1000);
+        const unit = (n, one, many) => `há ${n} ${n === 1 ? one : many}`;
+        if (sec < 10) return 'agora';
+        if (sec < 60) return unit(Math.floor(sec), 'segundo', 'segundos');
+        if (sec < 3600) return unit(Math.floor(sec / 60), 'minuto', 'minutos');
+        if (sec < 86400) return unit(Math.floor(sec / 3600), 'hora', 'horas');
+        return unit(Math.floor(sec / 86400), 'dia', 'dias');
+      ]]]

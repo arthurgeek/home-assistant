@@ -1,0 +1,25 @@
+# 24h temperature and humidity graph of an area: the temperature and humidity sensors set on the area, and the AC's
+# reading when the area has no temperature sensor. Variables: area (id), climate (optional, that fallback).
+history_graph:
+  default:
+    - climate: ""
+  card:
+    type: custom:mini-graph-card
+    name: Últimas 24h
+    hours_to_show: 24
+    points_per_hour: 2
+    line_width: 2
+    height: 120
+    entities_javascript: |
+      const area = areas['[[area]]'] || {};
+      const entities = [area.temperature_entity_id
+        ? { entity: area.temperature_entity_id, name: 'Temperatura', color: '#f5a97f' }
+        : { entity: '[[climate]]', attribute: 'current_temperature', name: 'Temperatura', color: '#f5a97f' }];
+      if (area.humidity_entity_id) entities.push({ entity: area.humidity_entity_id, name: 'Umidade', color: '#8aadf4', y_axis: 'secondary' });
+      return entities;
+    show:
+      labels: true
+      labels_secondary: true
+    card_mod:
+      style: |-
+        ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); }

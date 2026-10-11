@@ -1,0 +1,67 @@
+# Good Sleep duration chooser, opened by the WindFree Sleep preset. Variables: key (the area id).
+ac_sleep_chooser:
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#ac_[[key]]_sleep"
+    show_header: false
+    bg_blur: 16
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: room_header
+            variables:
+              area: "[[key]]"
+              icon: mdi:weather-night
+      - type: custom:bubble-card
+        card_type: separator
+        name: WindFree Sono · desligar em
+        icon: mdi:timer-outline
+      - type: custom:auto-entities
+        show_empty: false
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: climate
+              options:
+                type: custom:paper-buttons-row
+                styles:
+                  justify-content: center
+                  gap: 10px
+                base_config:
+                  layout: name
+                  ripple: none
+                  styles:
+                    button:
+                      padding: 12px 22px
+                      border-radius: 20px
+                      background: "var(--catppuccin-mauve, #c6a0f6)"
+                    name:
+                      color: "var(--catppuccin-base, #24273a)"
+                      font-size: 16px
+                      font-weight: 600
+                buttons:
+                  - name: 1h
+                    tap_action:
+                      action: call-service
+                      service: script.ac_good_sleep
+                      service_data: {entity_id: this.entity_id, hours: 1}
+                  - name: 2h
+                    tap_action:
+                      action: call-service
+                      service: script.ac_good_sleep
+                      service_data: {entity_id: this.entity_id, hours: 2}
+                  - name: 4h
+                    tap_action:
+                      action: call-service
+                      service: script.ac_good_sleep
+                      service_data: {entity_id: this.entity_id, hours: 4}
+                  - name: 8h
+                    tap_action:
+                      action: call-service
+                      service: script.ac_good_sleep
+                      service_data: {entity_id: this.entity_id, hours: 8}

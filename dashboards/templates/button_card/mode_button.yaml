@@ -1,0 +1,33 @@
+# ==========================================================================
+# Mode button: icon over label, filled while the entity is in `mode` (alarm pop-up)
+# Variables: icon, label, mode (the state of the entity in which the button is filled), accent.
+# ==========================================================================
+mode_button:
+  template:
+    - base_card
+  variables:
+    icon: mdi:help
+    label: ""
+    mode: ""
+    accent: "var(--catppuccin-mauve, #c6a0f6)"
+  show_name: false
+  show_icon: false
+  show_state: false
+  show_label: false
+  styles:
+    card:
+      - height: 88px
+      - padding: 0
+      - background: >-
+          [[[ return entity?.state === variables.mode ? variables.accent : 'rgba(54, 58, 79, 0.7)' ]]]
+    grid:
+      - grid-template-areas: "'content'"
+  custom_fields:
+    content: |-
+      [[[
+        const on = entity?.state === variables.mode;
+        const fg = on ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
+        return `<div style="display: flex; flex-direction: column; align-items: center; gap: 6px; color: ${fg};">
+          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 26px;"></ha-icon>
+          <div style="font-size: 14px; font-weight: 600;">${variables.label}</div></div>`;
+      ]]]

@@ -1,0 +1,140 @@
+# ==========================================================================
+# Room card v2: name + small status line (lights-on count, temperature, presence),
+# big room icon in a clipped circle bottom-left, round action buttons right.
+# The card is given only an area: the name, icon and temperature are the area's, and its lights, ACs and occupancy
+# sensor are the entities placed in it (directly or through their device), so nothing here lists them.
+# Variables: area (id), circle_color, popup (default #<area>), buttons: extra buttons after the generated ones, as
+# {icon, entity, kind: toggle|press, press_entity}, subtitle: extra text in the status line.
+# ==========================================================================
+room_card_v2:
+  template:
+    - base_card
+    - anim
+    - area_room
+  variables:
+    area: null
+    circle_color: "var(--catppuccin-green, #a6da95)"
+    popup: null
+    subtitle: null
+    buttons: []
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: navigate
+    navigation_path: "[[[ return variables.popup || '#' + variables.area ]]]"
+  styles:
+    card:
+      - height: 100%
+      - padding: 16px 12px 12px 16px
+      - overflow: hidden
+      - box-sizing: border-box
+      - background: |
+          [[[
+            const on = variables.room.lights.some((id) => states[id]?.state === 'on');
+            return on ? 'linear-gradient(135deg, rgba(238, 212, 159, 0.16), rgba(36, 39, 58, 0.75))' : 'rgba(36, 39, 58, 0.7)';
+          ]]]
+    grid:
+      - grid-template-areas: "'title btn' 'status btn' '. btn'"
+      - grid-template-columns: 1fr min-content
+      - grid-template-rows: min-content min-content 1fr
+    custom_fields:
+      circle:
+        - position: absolute
+        - left: -30px
+        - bottom: -30px
+        - pointer-events: none
+      title:
+        - justify-self: start
+        - text-align: left
+        - font-size: 16px
+        - font-weight: 600
+        - color: var(--catppuccin-text,  #cad3f5)
+        - z-index: 1
+      status:
+        - justify-self: start
+        - z-index: 1
+      btn:
+        - align-self: start
+        - z-index: 1
+  custom_fields:
+    # Own markup instead of button-card's icon: that one sizes wrongly when rendered in a hidden tab.
+    circle: |
+      [[[
+        return `<div style="width: 100px; height: 100px; border-radius: 50%; background: ${variables.circle_color}; opacity: 0.85;
+                            display: flex; align-items: center; justify-content: center;">
+          <ha-icon icon="${variables.room.icon}" style="--mdc-icon-size: 46px; color: var(--catppuccin-base, #24273a); opacity: 0.7; margin: -18px 0 0 18px;"></ha-icon></div>`;
+      ]]]
+    title: "[[[ return variables.room.name || '--' ]]]"
+    status: |
+      [[[
+        const parts = [];
+        const room = variables.room;
+        if (room.lights.length) {
+          const n = room.lights.filter((id) => states[id]?.state === 'on').length;
+          const color = n ? 'var(--catppuccin-yellow, #eed49f)' : 'var(--catppuccin-overlay1, #8087a2)';
+          parts.push(`<span style="display: inline-flex; align-items: flex-start;">
+            <ha-icon icon="mdi:lightbulb-group" style="--mdc-icon-size: 15px; color: ${color};"></ha-icon>
+            ${n ? `<sup style="font-size: 10px; font-weight: 700; color: ${color}; margin-left: 1px;">${n}</sup>` : ''}</span>`);
+        }
+        if (room.temperature !== null) {
+          parts.push(`<span style="display: inline-flex; align-items: center; gap: 2px;">
+            <ha-icon icon="mdi:thermometer" style="--mdc-icon-size: 15px; color: var(--catppuccin-sapphire, #7dc4e4);"></ha-icon>
+            <span style="font-size: 12px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${room.temperature.toFixed(1)}°</span></span>`);
+        }
+        if (room.presence) {
+          const here = states[room.presence]?.state === 'on';
+          parts.push(`<ha-icon icon="${here ? 'mdi:account' : 'mdi:account-outline'}" title="${here ? 'Presença' : 'Vazio'}"
+            style="--mdc-icon-size: 15px; color: ${here ? 'var(--catppuccin-green, #a6da95)' : 'var(--catppuccin-overlay1, #8087a2)'};"></ha-icon>`);
+        }
+        if (variables.subtitle) {
+          parts.push(`<span style="font-size: 12px; color: var(--catppuccin-subtext0, #a5adcb);">${variables.subtitle}</span>`);
+        }
+        return `<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">${parts.join('')}</div>`;
+      ]]]
+    btn:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          flex-direction: column
+          flex-wrap: nowrap
+          gap: 8px
+        buttons: |-
+          [[[
+            const activeStates = ['on', 'open', 'playing', 'cool', 'dry', 'heat', 'auto', 'fan_only', 'heat_cool'];
+            const room = variables.room;
+            const list = [
+              ...room.lights.map((entity) => ({ entity, icon: states[entity].attributes.icon || 'mdi:lightbulb', kind: 'toggle' })),
+              ...room.climates.map((entity) => ({ entity, icon: 'mdi:air-conditioner', kind: 'ac' })),
+              ...(variables.buttons || []),
+            ];
+            if (!list.length) return [{ layout: 'icon', icon: 'mdi:circle-small', styles: { button: { display: 'none' } } }];
+            return list.map((b) => {
+              const st = states[b.entity]?.state;
+              const active = activeStates.includes(st);
+              let tap;
+              if (b.kind === 'ac') {
+                tap = { action: 'call-service', service: st === 'off' ? 'script.ac_turn_on' : 'climate.turn_off',
+                        service_data: { entity_id: b.entity } };
+              } else if (b.kind === 'press') {
+                tap = { action: 'call-service', service: 'button.press', service_data: { entity_id: b.press_entity },
+                        confirmation: { text: 'Destrancar a porta?' } };
+              } else {
+                tap = { action: 'toggle' };
+              }
+              // an AC: hold always turns it off (the state can be stale)
+              const hold = b.kind === 'ac'
+                ? { action: 'call-service', service: 'climate.turn_off', service_data: { entity_id: b.entity }, haptic: 'heavy' }
+                : { action: 'more-info' };
+              return {
+                entity: b.entity, icon: b.icon, layout: 'icon', ripple: 'circle',
+                tap_action: tap, hold_action: hold,
+                styles: {
+                  button: { width: '40px', height: '40px', padding: '0', 'border-radius': '50%',
+                            background: active ? 'var(--catppuccin-yellow, #eed49f)' : 'rgba(73, 77, 100, 0.7)' },
+                  icon: { color: active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)',
+                          '--mdc-icon-size': '20px' },
+                },
+              };
+            });
+          ]]]
