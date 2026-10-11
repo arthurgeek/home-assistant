@@ -39,6 +39,7 @@ Dashboard cards and theme:
 [Mini Media Player](https://github.com/kalkih/mini-media-player),
 [mini-graph-card](https://github.com/kalkih/mini-graph-card),
 [Weather Forecast Card](https://github.com/troinine/ha-weather-forecast-card),
+[Weather Radar Card](https://github.com/jpettitt/weather-radar-card),
 [Simple Tabs](https://github.com/agoberg85/home-assistant-simple-tabs),
 [Todo List Card](https://github.com/agoberg85/home-assistant-todo-card),
 [MySmart Floating Navbar](https://github.com/agoberg85/mysmart-floating-navbar),
