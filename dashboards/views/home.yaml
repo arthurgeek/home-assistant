@@ -27,10 +27,8 @@ cards:
   - !include ../popups/alarm.yaml
   - !include ../popups/guest_wifi.yaml
   - !include ../popups/meds.yaml
-  - type: vertical-stack
-    cards: !include_dir_list ../popups/rooms
-  - type: vertical-stack
-    cards: !include_dir_list ../popups/ac
+  - !include ../popups/rooms.yaml
+  - !include ../popups/ac.yaml
 
   # ========================================================
   # HEADER (greeting + sentence with tappable pills)

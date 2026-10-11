@@ -1,0 +1,47 @@
+# One pop-up per AC, and a Good Sleep chooser for each Samsung; both are built from the area (streamline_templates.yaml).
+type: vertical-stack
+cards:
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: main_bedroom
+  - type: custom:streamline-card
+    template: ac_sleep_chooser
+    variables:
+      key: main_bedroom
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: office
+  - type: custom:streamline-card
+    template: ac_sleep_chooser
+    variables:
+      key: office
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: living_room
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: kids_bedroom_1
+  - type: custom:streamline-card
+    template: ac_sleep_chooser
+    variables:
+      key: kids_bedroom_1
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: kids_bedroom_2
+  - type: custom:streamline-card
+    template: ac_sleep_chooser
+    variables:
+      key: kids_bedroom_2
+  - type: custom:streamline-card
+    template: ac_popup
+    variables:
+      key: kids_bedroom_3
+  - type: custom:streamline-card
+    template: ac_sleep_chooser
+    variables:
+      key: kids_bedroom_3

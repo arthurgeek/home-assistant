@@ -1,9 +1,0 @@
-type: custom:streamline-card
-template: ac_popup
-variables:
-  key: office
-  climate: climate.office_ac
-  icon: mdi:desk
-  display: switch.office_ac_display_lighting
-  humidity: sensor.office_office_air_conditioner_humidity
-  ac_card: !include ../../cards/ac/office.yaml

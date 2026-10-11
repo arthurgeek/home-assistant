@@ -1,0 +1,87 @@
+type: vertical-stack
+cards:
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: living_room
+      extra_content:
+        - type: custom:bubble-card
+          card_type: separator
+          name: Áudio & Vídeo
+          icon: mdi:television-speaker
+        - type: custom:mini-media-player
+          entity: media_player.living_room
+          name: Sonos
+          artwork: cover
+          hide:
+            power: true
+        - type: custom:mini-media-player
+          entity: media_player.tv_samsung_6_series_55
+          name: TV
+          icon: mdi:television
+          artwork: cover
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: office
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: main_bedroom
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: kids_bedroom_1
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: kids_bedroom_2
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: kids_bedroom_3
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: garage
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
+      key: laundry_area
+      extra_content:
+        - type: custom:bubble-card
+          card_type: separator
+          name: Lavadora
+          icon: mdi:washing-machine
+        - type: custom:bubble-card
+          card_type: button
+          entity: switch.washer_power
+          name: Lavadora
+          icon: mdi:washing-machine
+          sub_button:
+            - entity: sensor.washer_current_status
+              show_state: true
+              show_icon: false
+              show_background: false
+            - entity: sensor.washer_remaining_time
+              show_state: true
+              show_icon: false
+              show_background: false
+        - type: custom:bubble-card
+          card_type: separator
+          name: Secadora
+          icon: mdi:tumble-dryer
+        - type: custom:bubble-card
+          card_type: button
+          entity: switch.dryer_power
+          name: Secadora
+          icon: mdi:tumble-dryer
+          sub_button:
+            - entity: sensor.dryer_current_status
+              show_state: true
+              show_icon: false
+              show_background: false
+            - entity: sensor.dryer_remaining_time
+              show_state: true
+              show_icon: false
+              show_background: false

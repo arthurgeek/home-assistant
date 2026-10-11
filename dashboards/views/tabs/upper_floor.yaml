@@ -23,36 +23,16 @@ cards:
     view_layout:
       grid-area: office
     variables:
-      room: sensor.office_room
-      icon: mdi:desk
-      circle_color: "var(--catppuccin-mauve, #c6a0f6)"
-      temp_sensor: sensor.office_office_air_conditioner_temperature
-      presence: binary_sensor.office_presence
-      lights:
-        - light.office_light
-      popup: "#office"
-      buttons:
-        - icon: mdi:lightbulb
-          entity: light.office_light
-          kind: toggle
-        - icon: mdi:air-conditioner
-          entity: climate.office_ac
-          kind: ac
+      area: office
+      circle_color: "var(--catppuccin-peach, #f5a97f)"
 
   - type: custom:button-card
     template: room_card_v2
     view_layout:
       grid-area: suite
     variables:
-      room: sensor.main_bedroom_room
-      icon: mdi:bed-king
+      area: main_bedroom
       circle_color: "var(--catppuccin-lavender, #b7bdf8)"
-      temp_sensor: sensor.main_bedroom_main_bedroom_ac_temperature
-      popup: "#main_bedroom"
-      buttons:
-        - icon: mdi:air-conditioner
-          entity: climate.main_bedroom_ac
-          kind: ac
 
   - type: custom:css-swipe-card
     view_layout:
@@ -69,38 +49,17 @@ cards:
           card:
             - height: 164px
         variables:
-          room: sensor.kids_bedroom_1_room
-          icon: mdi:bed
-          circle_color: "var(--catppuccin-sapphire, #7dc4e4)"
-          temp_sensor: sensor.kids_bedroom_1_ac_temperature
-          popup: "#kids_bedroom_1"
-          buttons:
-            - icon: mdi:air-conditioner
-              entity: climate.kids_bedroom_1_ac
-              kind: ac
+          area: kids_bedroom_1
+          circle_color: "var(--catppuccin-green, #a6da95)"
       - type: custom:button-card
         template: room_card_v2
         styles: *kids_room_height
         variables:
-          room: sensor.kids_bedroom_2_room
-          icon: mdi:bed
-          circle_color: "var(--catppuccin-teal, #8bd5ca)"
-          temp_sensor: sensor.kids_bedroom_2_ac_temperature
-          popup: "#kids_bedroom_2"
-          buttons:
-            - icon: mdi:air-conditioner
-              entity: climate.kids_bedroom_2_ac
-              kind: ac
+          area: kids_bedroom_2
+          circle_color: "var(--catppuccin-blue, #8aadf4)"
       - type: custom:button-card
         template: room_card_v2
         styles: *kids_room_height
         variables:
-          room: sensor.kids_bedroom_3_room
-          icon: mdi:bed
-          circle_color: "var(--catppuccin-pink, #f5bde6)"
-          temp_sensor: sensor.kids_bedroom_3_ac_temperature
-          popup: "#kids_bedroom_3"
-          buttons:
-            - icon: mdi:air-conditioner
-              entity: climate.kids_bedroom_3_ac
-              kind: ac
+          area: kids_bedroom_3
+          circle_color: "var(--catppuccin-mauve, #c6a0f6)"

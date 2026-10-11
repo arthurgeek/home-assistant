@@ -15,7 +15,7 @@ The interface is in Brazilian Portuguese; everything else is in English.
 | `packages/modes/` | House mode (day, night, away) |
 | `packages/modules/` | Features that span rooms |
 | `packages/routines/` | Time- and event-driven routines |
-| `dashboards/` | The Casa dashboard: views, cards, pop-ups and card templates |
+| `dashboards/` | The Casa dashboard: views, pop-ups and card templates. Room cards and pop-ups are built from the Home Assistant areas (name, icon, temperature, lights, ACs, occupancy sensor), so a new sensor or light needs no dashboard change, only its area |
 | `custom_templates/` | Shared Jinja macros |
 | `themes/` | The Catppuccin theme |
 | `www/` | Bubble Card modules |
@@ -30,6 +30,7 @@ Dashboard cards and theme:
 [Bubble Card](https://github.com/Clooos/Bubble-Card),
 [button-card](https://github.com/custom-cards/button-card),
 [streamline-card](https://github.com/brunosabot/streamline-card),
+[auto-entities](https://github.com/thomasloven/lovelace-auto-entities),
 [layout-card](https://github.com/thomasloven/lovelace-layout-card),
 [card-mod](https://github.com/thomasloven/lovelace-card-mod),
 [Paper Buttons Row](https://github.com/jcwillox/lovelace-paper-buttons-row),

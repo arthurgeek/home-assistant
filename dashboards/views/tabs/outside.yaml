@@ -44,30 +44,16 @@ cards:
     view_layout:
       grid-area: garage
     variables:
-      room: sensor.garage_room
-      icon: mdi:garage
+      area: garage
       circle_color: "var(--catppuccin-peach, #f5a97f)"
-      lights:
-        - light.garage_light
-        - light.garage_front_light
-      popup: "#garage"
-      buttons:
-        - icon: mdi:lightbulb
-          entity: light.garage_light
-          kind: toggle
-        - icon: mdi:coach-lamp
-          entity: light.garage_front_light
-          kind: toggle
 
   - type: custom:button-card
     template: room_card_v2
     view_layout:
       grid-area: laundry
     variables:
-      room: sensor.laundry_room
-      icon: mdi:washing-machine
+      area: laundry_area
       circle_color: "var(--catppuccin-blue, #8aadf4)"
-      popup: "#laundry"
       subtitle: |-
         [[[
           const label = (s) => ({power_off: 'desligada', end: 'concluída', unknown: '--', unavailable: '--'}[s] ?? 'em uso');

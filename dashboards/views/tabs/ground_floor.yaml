@@ -19,12 +19,9 @@ cards:
     view_layout:
       grid-area: living_room
     variables:
-      room: sensor.living_room_room
-      icon: mdi:sofa
+      area: living_room
       circle_color: "var(--catppuccin-green, #a6da95)"
-      climate: climate.living_room_ac
-      presence: binary_sensor.living_room_presence
-      popup: "#living_room"
+      # not placed in the area's lights or ACs, so passed in after the generated buttons
       buttons:
         - icon: mdi:door
           entity: button.main_door_unlock
@@ -33,6 +30,3 @@ cards:
         - icon: mdi:television
           entity: media_player.tv_samsung_6_series_55
           kind: toggle
-        - icon: mdi:air-conditioner
-          entity: climate.living_room_ac
-          kind: ac

@@ -1,9 +1,0 @@
-type: custom:streamline-card
-template: ac_popup
-variables:
-  key: kids_bedroom_3
-  climate: climate.kids_bedroom_3_ac
-  icon: mdi:bed
-  display: switch.kids_bedroom_3_ac_display_lighting
-  humidity: sensor.kids_bedroom_3_ac_humidity
-  ac_card: !include ../../cards/ac/kids_bedroom_3.yaml

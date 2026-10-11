@@ -77,6 +77,33 @@ anim:
     }
 
 # ==========================================================================
+# What an air conditioner is made of, for its card and the controls in its pop-up: the climate (the card's entity, or
+# `climate`), its area, whether it is a Samsung (the `samsung` label), the area's temperature and humidity sensors, and
+# the entities of its own device (power, energy today, energy saving, display light, off timer, filter hours). A card
+# using this template reads `variables.ac`.
+# ==========================================================================
+ac_device:
+  variables:
+    climate: null
+    ac: |
+      [[[
+        const id = variables.climate || entity?.entity_id;
+        const reg = hass.entities[id] || {};
+        const area = reg.area_id ?? hass.devices[reg.device_id]?.area_id;
+        const info = hass.areas[area] || {};
+        const mine = Object.keys(hass.entities).filter((e) => hass.entities[e].device_id === reg.device_id && states[e]);
+        const find = (domain, test) => mine.find((e) => e.startsWith(domain + '.') && test(e));
+        return {
+          climate: id, area,
+          samsung: (reg.labels || []).includes('samsung'),
+          temperature: info.temperature_entity_id, humidity: info.humidity_entity_id,
+          power: find('sensor', (e) => states[e].attributes.device_class === 'power'),
+          energyToday: find('sensor', (e) => /_energy_today$/.test(e)),
+          eco: find('switch', (e) => /energy_saving$/.test(e)),
+        };
+      ]]]
+
+# ==========================================================================
 # AC card: current temp (+ humidity), temp curve background, mode buttons,
 # vertical target control. Samsung: WindFree; LG: Eco switch.
 # ==========================================================================
@@ -84,15 +111,7 @@ ac_card:
   template:
     - base_card
     - anim
-  variables:
-    climate: ""
-    room: null
-    samsung: true
-    temp_sensor: null
-    humidity_sensor: null
-    power_sensor: null
-    energy_today_sensor: null
-    eco_switch: null
+    - ac_device
   triggers_update: all
   show_name: false
   show_icon: false
@@ -100,11 +119,9 @@ ac_card:
   # a tap opens the AC's pop-up wherever the card is (Casa, the climate pop-up, a room pop-up); inside that pop-up
   # it opens the AC's own dialog, with its history and attributes
   tap_action:
-    action: >-
-      [[[ const id = variables.climate;
-          return location.hash === '#ac_' + id.replace('climate.', '').replace(/_ac$/, '') ? 'more-info' : 'navigate'; ]]]
-    navigation_path: "[[[ const id = variables.climate; return '#ac_' + id.replace('climate.', '').replace(/_ac$/, ''); ]]]"
-    entity: "[[[ return variables.climate ]]]"
+    action: "[[[ return location.hash === '#ac_' + variables.ac.area ? 'more-info' : 'navigate' ]]]"
+    navigation_path: "[[[ return '#ac_' + variables.ac.area ]]]"
+    entity: "[[[ return variables.ac.climate ]]]"
   hold_action:
     action: navigate
     navigation_path: "#climate"
@@ -153,29 +170,29 @@ ac_card:
   custom_fields:
     temp: |
       [[[
-        const c = states[variables.climate];
-        const raw = variables.temp_sensor ? states[variables.temp_sensor]?.state : c?.attributes?.current_temperature;
+        const c = states[variables.ac.climate];
+        const raw = variables.ac.temperature ? states[variables.ac.temperature]?.state : c?.attributes?.current_temperature;
         const t = parseFloat(raw);
-        const h = variables.humidity_sensor ? parseFloat(states[variables.humidity_sensor]?.state) : NaN;
+        const h = variables.ac.humidity ? parseFloat(states[variables.ac.humidity]?.state) : NaN;
         const temp = isNaN(t) ? '--' : t.toFixed(1);
         const hum = isNaN(h) ? '' : `<span style="font-size: 13px; opacity: .7; margin-left: 6px;">${h.toFixed(0)}%</span>`;
         return `<span style="font-size: 2.4em; font-weight: 300; color: var(--catppuccin-text, #cad3f5);">${temp}°</span>${hum}`;
       ]]]
     title: |
       [[[
-        const c = states[variables.climate];
+        const c = states[variables.ac.climate];
         const on = c && !['off', 'unavailable', 'unknown'].includes(c.state);
         let status = '';
-        if (on && variables.power_sensor) {
-          const w = parseFloat(states[variables.power_sensor]?.state);
+        if (on && variables.ac.power) {
+          const w = parseFloat(states[variables.ac.power]?.state);
           if (!isNaN(w)) status = `⚡ ${w.toFixed(0)} W`;
-        } else if (on && variables.energy_today_sensor) {
-          const wh = parseFloat(states[variables.energy_today_sensor]?.state);
+        } else if (on && variables.ac.energyToday) {
+          const wh = parseFloat(states[variables.ac.energyToday]?.state);
           if (!isNaN(wh)) status = `⚡ ${(wh / 1000).toFixed(1).replace('.', ',')} kWh hoje`;
         }
         // Good Sleep: end time in the status line; the progress bar along the bottom shows what's left
         if (on && ['sleep', 'wind_free_sleep'].includes(c?.attributes?.preset_mode)) {
-          const endIso = states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.climate];
+          const endIso = states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.ac.climate];
           const end = endIso ? new Date(endIso) : null;
           const mins = end ? Math.max(0, Math.round((end - Date.now()) / 60000)) : null;
           const left = mins === null ? null
@@ -184,7 +201,8 @@ ac_card:
           status = status ? `${status} · ${sleep}` : sleep;
         }
         if (!c || c.state === 'unavailable') status = 'indisponível';
-        const name = states[variables.room]?.attributes?.friendly_name || '--';
+        const entry = hass.entities[variables.ac.climate];
+        const name = hass.areas[entry?.area_id ?? hass.devices[entry?.device_id]?.area_id]?.name || '--';
         return `<div style="font-size: 14px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${name}</div>
                 <div style="font-size: 11px; color: var(--catppuccin-subtext0, #a5adcb); min-height: 14px;">${status}</div>`;
       ]]]
@@ -192,8 +210,8 @@ ac_card:
     sleepbar: |
       [[[
         const info = states['sensor.ac_good_sleep_ends']?.attributes || {};
-        const endIso = info.ends?.[variables.climate], startIso = info.starts?.[variables.climate];
-        const c = states[variables.climate];
+        const endIso = info.ends?.[variables.ac.climate], startIso = info.starts?.[variables.ac.climate];
+        const c = states[variables.ac.climate];
         if (!endIso || !startIso || !c || c.state === 'off') return '';
         const end = new Date(endIso), start = new Date(startIso);
         const left = Math.min(1, Math.max(0, (end - Date.now()) / (end - start)));
@@ -205,8 +223,8 @@ ac_card:
       card:
         type: custom:mini-graph-card
         entities:
-          - entity: "[[[ return variables.temp_sensor || variables.climate ]]]"
-            attribute: "[[[ return variables.temp_sensor ? undefined : 'current_temperature' ]]]"
+          - entity: "[[[ return variables.ac.temperature || variables.ac.climate ]]]"
+            attribute: "[[[ return variables.ac.temperature ? undefined : 'current_temperature' ]]]"
             color: "rgba(202, 211, 245, 0.25)"
         hours_to_show: 24
         points_per_hour: 1
@@ -251,71 +269,71 @@ ac_card:
           - icon: mdi:power
             tap_action:
               action: call-service
-              service: "[[[ return states[variables.climate]?.state === 'off' ? 'script.ac_turn_on' : 'climate.turn_off' ]]]"
+              service: "[[[ return states[variables.ac.climate]?.state === 'off' ? 'script.ac_turn_on' : 'climate.turn_off' ]]]"
               service_data:
-                entity_id: "[[[ return variables.climate ]]]"
+                entity_id: "[[[ return variables.ac.climate ]]]"
             hold_action:
               action: call-service
               service: climate.turn_off
               service_data:
-                entity_id: "[[[ return variables.climate ]]]"
+                entity_id: "[[[ return variables.ac.climate ]]]"
               haptic: heavy
             styles:
               button:
                 border-radius: 50% 0 0 50%
-                background: "[[[ return states[variables.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.climate].state) ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+                background: "[[[ return states[variables.ac.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.ac.climate].state) ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
               icon:
-                color: "[[[ return states[variables.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.climate].state) ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                color: "[[[ return states[variables.ac.climate]?.state && !['off','unavailable','unknown'].includes(states[variables.ac.climate].state) ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
           - icon: mdi:snowflake
             tap_action:
               action: call-service
               service: climate.set_hvac_mode
               service_data:
-                entity_id: "[[[ return variables.climate ]]]"
+                entity_id: "[[[ return variables.ac.climate ]]]"
                 hvac_mode: cool
             styles:
               button:
-                background: "[[[ return states[variables.climate]?.state === 'cool' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+                background: "[[[ return states[variables.ac.climate]?.state === 'cool' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
               icon:
-                color: "[[[ return states[variables.climate]?.state === 'cool' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                color: "[[[ return states[variables.ac.climate]?.state === 'cool' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
           - icon: mdi:water-percent
             tap_action:
               action: call-service
               service: climate.set_hvac_mode
               service_data:
-                entity_id: "[[[ return variables.climate ]]]"
+                entity_id: "[[[ return variables.ac.climate ]]]"
                 hvac_mode: dry
             styles:
               button:
-                background: "[[[ return states[variables.climate]?.state === 'dry' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
+                background: "[[[ return states[variables.ac.climate]?.state === 'dry' ? 'var(--catppuccin-mauve, #c6a0f6)' : 'rgba(73, 77, 100, 0.85)' ]]]"
               icon:
-                color: "[[[ return states[variables.climate]?.state === 'dry' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
+                color: "[[[ return states[variables.ac.climate]?.state === 'dry' ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)' ]]]"
           # 4th button: WindFree (Samsung preset) or Eco (LG switch)
-          - icon: "[[[ return variables.samsung ? 'mdi:weather-windy' : 'mdi:leaf' ]]]"
+          - icon: "[[[ return variables.ac.samsung ? 'mdi:weather-windy' : 'mdi:leaf' ]]]"
             tap_action:
               action: call-service
-              service: "[[[ return variables.samsung ? 'climate.set_preset_mode' : 'switch.toggle' ]]]"
+              service: "[[[ return variables.ac.samsung ? 'climate.set_preset_mode' : 'switch.toggle' ]]]"
               service_data: |
                 [[[
-                  if (!variables.samsung) return { entity_id: variables.eco_switch };
-                  const p = states[variables.climate]?.attributes?.preset_mode;
-                  return { entity_id: variables.climate, preset_mode: p === 'wind_free' ? 'none' : 'wind_free' };
+                  if (!variables.ac.samsung) return { entity_id: variables.ac.eco };
+                  const p = states[variables.ac.climate]?.attributes?.preset_mode;
+                  return { entity_id: variables.ac.climate, preset_mode: p === 'wind_free' ? 'none' : 'wind_free' };
                 ]]]
             styles:
               button:
                 background: |
                   [[[
-                    const active = variables.samsung
-                      ? states[variables.climate]?.attributes?.preset_mode === 'wind_free'
-                      : states[variables.eco_switch]?.state === 'on';
+                    const active = variables.ac.samsung
+                      ? states[variables.ac.climate]?.attributes?.preset_mode === 'wind_free'
+                      : states[variables.ac.eco]?.state === 'on';
                     return active ? 'var(--catppuccin-green, #a6da95)' : 'rgba(73, 77, 100, 0.85)';
                   ]]]
               icon:
                 color: |
                   [[[
-                    const active = variables.samsung
-                      ? states[variables.climate]?.attributes?.preset_mode === 'wind_free'
-                      : states[variables.eco_switch]?.state === 'on';
+                    const active = variables.ac.samsung
+                      ? states[variables.ac.climate]?.attributes?.preset_mode === 'wind_free'
+                      : states[variables.ac.eco]?.state === 'on';
                     return active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
                   ]]]
           # Fan: tap cycles fan_mode; hold toggles swing
@@ -325,25 +343,25 @@ ac_card:
               service: climate.set_fan_mode
               service_data: |
                 [[[
-                  const a = states[variables.climate]?.attributes || {};
+                  const a = states[variables.ac.climate]?.attributes || {};
                   const order = ['auto', 'low', 'medium', 'high', 'turbo'].filter(m => (a.fan_modes || []).includes(m));
                   const next = order[(order.indexOf(a.fan_mode) + 1) % order.length] || 'auto';
-                  return { entity_id: variables.climate, fan_mode: next };
+                  return { entity_id: variables.ac.climate, fan_mode: next };
                 ]]]
             hold_action:
               action: call-service
               service: climate.set_swing_mode
               service_data: |
                 [[[
-                  const s = states[variables.climate]?.attributes?.swing_mode;
-                  const on = variables.samsung ? 'both' : 'on';
-                  return { entity_id: variables.climate, swing_mode: s === 'off' ? on : 'off' };
+                  const s = states[variables.ac.climate]?.attributes?.swing_mode;
+                  const on = variables.ac.samsung ? 'both' : 'on';
+                  return { entity_id: variables.ac.climate, swing_mode: s === 'off' ? on : 'off' };
                 ]]]
             styles:
               button:
                 border-radius: 0 50% 50% 0
               icon:
-                animation: "[[[ const s = states[variables.climate]?.state; return s && !['off','unavailable','unknown'].includes(s) ? 'spin 2s linear infinite' : 'none' ]]]"
+                animation: "[[[ const s = states[variables.ac.climate]?.state; return s && !['off','unavailable','unknown'].includes(s) ? 'spin 2s linear infinite' : 'none' ]]]"
     target:
       card:
         type: custom:paper-buttons-row
@@ -373,9 +391,9 @@ ac_card:
               service: climate.set_temperature
               service_data: |
                 [[[
-                  const a = states[variables.climate]?.attributes || {};
+                  const a = states[variables.ac.climate]?.attributes || {};
                   const base = typeof a.temperature === 'number' ? a.temperature : 23;
-                  return { entity_id: variables.climate, temperature: Math.min(a.max_temp ?? 30, base + (a.target_temp_step || 1)) };
+                  return { entity_id: variables.ac.climate, temperature: Math.min(a.max_temp ?? 30, base + (a.target_temp_step || 1)) };
                 ]]]
             styles:
               button:
@@ -383,7 +401,7 @@ ac_card:
           - layout: name
             name: |
               [[[
-                const t = states[variables.climate]?.attributes?.temperature;
+                const t = states[variables.ac.climate]?.attributes?.temperature;
                 return typeof t === 'number' ? `${Math.round(t)}°` : '--';
               ]]]
           - icon: mdi:chevron-down
@@ -393,9 +411,9 @@ ac_card:
               service: climate.set_temperature
               service_data: |
                 [[[
-                  const a = states[variables.climate]?.attributes || {};
+                  const a = states[variables.ac.climate]?.attributes || {};
                   const base = typeof a.temperature === 'number' ? a.temperature : 23;
-                  return { entity_id: variables.climate, temperature: Math.max(a.min_temp ?? 16, base - (a.target_temp_step || 1)) };
+                  return { entity_id: variables.ac.climate, temperature: Math.max(a.min_temp ?? 16, base - (a.target_temp_step || 1)) };
                 ]]]
             styles:
               button:
@@ -1002,31 +1020,58 @@ active_row:
                 color: "var(--catppuccin-base, #24273a)"
 
 # ==========================================================================
-# Room card v2: name + small status line (lights-on count, temperature),
+# What an area holds, for the room card, pop-up header and presence section: its name, icon and temperature (the area's
+# temperature sensor, else its AC's reading), and the lights, ACs and occupancy sensor placed in it, directly or through
+# their device. A card using this template is given `area` (id) and reads `variables.room`.
+# ==========================================================================
+area_room:
+  variables:
+    area: null
+    room: |
+      [[[
+        const area = hass.areas[variables.area] || {};
+        const here = (id) => {
+          const e = hass.entities[id];
+          return states[id] && e && !e.hidden && (e.area_id ?? hass.devices[e.device_id]?.area_id) === variables.area;
+        };
+        const ids = Object.keys(hass.entities).filter(here).sort();
+        const of = (domain) => ids.filter((id) => id.startsWith(domain + '.'));
+        const climates = of('climate');
+        let temperature = parseFloat(states[area.temperature_entity_id]?.state);
+        if (isNaN(temperature)) temperature = parseFloat(climates.map((id) => states[id].attributes.current_temperature).find((t) => t !== undefined));
+        return {
+          name: area.name, icon: area.icon || 'mdi:sofa',
+          entities: ids, lights: of('light'), climates,
+          temperature: isNaN(temperature) ? null : temperature,
+          presence: ids.find((id) => id.startsWith('binary_sensor.') && states[id].attributes.device_class === 'occupancy'),
+        };
+      ]]]
+
+# ==========================================================================
+# Room card v2: name + small status line (lights-on count, temperature, presence),
 # big room icon in a clipped circle bottom-left, round action buttons right.
-# buttons: list of {icon, entity, kind: toggle|ac|press, press_entity}
+# The card is given only an area: the name, icon and temperature are the area's, and its lights, ACs and occupancy
+# sensor are the entities placed in it (directly or through their device), so nothing here lists them.
+# Variables: area (id), circle_color, popup (default #<area>), buttons: extra buttons after the generated ones, as
+# {icon, entity, kind: toggle|press, press_entity}, subtitle: extra text in the status line.
 # ==========================================================================
 room_card_v2:
   template:
     - base_card
     - anim
+    - area_room
   variables:
-    room: null
-    icon: mdi:sofa
+    area: null
     circle_color: "var(--catppuccin-green, #a6da95)"
-    temp_sensor: null
-    climate: null
-    lights: []
-    presence: null
-    subtitle: null
     popup: null
+    subtitle: null
     buttons: []
   triggers_update: all
   show_name: false
   show_icon: false
   tap_action:
-    action: "[[[ return variables.popup ? 'navigate' : 'none' ]]]"
-    navigation_path: "[[[ return variables.popup ]]]"
+    action: navigate
+    navigation_path: "[[[ return variables.popup || '#' + variables.area ]]]"
   styles:
     card:
       - height: 100%
@@ -1035,7 +1080,7 @@ room_card_v2:
       - box-sizing: border-box
       - background: |
           [[[
-            const on = (variables.lights || []).some((id) => states[id]?.state === 'on');
+            const on = variables.room.lights.some((id) => states[id]?.state === 'on');
             return on ? 'linear-gradient(135deg, rgba(238, 212, 159, 0.16), rgba(36, 39, 58, 0.75))' : 'rgba(36, 39, 58, 0.7)';
           ]]]
     grid:
@@ -1067,30 +1112,27 @@ room_card_v2:
       [[[
         return `<div style="width: 100px; height: 100px; border-radius: 50%; background: ${variables.circle_color}; opacity: 0.85;
                             display: flex; align-items: center; justify-content: center;">
-          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 46px; color: var(--catppuccin-base, #24273a); opacity: 0.7; margin: -18px 0 0 18px;"></ha-icon></div>`;
+          <ha-icon icon="${variables.room.icon}" style="--mdc-icon-size: 46px; color: var(--catppuccin-base, #24273a); opacity: 0.7; margin: -18px 0 0 18px;"></ha-icon></div>`;
       ]]]
-    title: "[[[ return states[variables.room]?.attributes?.friendly_name || '--' ]]]"
+    title: "[[[ return variables.room.name || '--' ]]]"
     status: |
       [[[
         const parts = [];
-        const lights = variables.lights || [];
-        if (lights.length) {
-          const n = lights.filter((id) => states[id]?.state === 'on').length;
+        const room = variables.room;
+        if (room.lights.length) {
+          const n = room.lights.filter((id) => states[id]?.state === 'on').length;
           const color = n ? 'var(--catppuccin-yellow, #eed49f)' : 'var(--catppuccin-overlay1, #8087a2)';
           parts.push(`<span style="display: inline-flex; align-items: flex-start;">
             <ha-icon icon="mdi:lightbulb-group" style="--mdc-icon-size: 15px; color: ${color};"></ha-icon>
             ${n ? `<sup style="font-size: 10px; font-weight: 700; color: ${color}; margin-left: 1px;">${n}</sup>` : ''}</span>`);
         }
-        const raw = variables.temp_sensor ? states[variables.temp_sensor]?.state
-          : variables.climate ? states[variables.climate]?.attributes?.current_temperature : undefined;
-        if (raw !== undefined) {
-          const t = parseFloat(raw);
+        if (room.temperature !== null) {
           parts.push(`<span style="display: inline-flex; align-items: center; gap: 2px;">
             <ha-icon icon="mdi:thermometer" style="--mdc-icon-size: 15px; color: var(--catppuccin-sapphire, #7dc4e4);"></ha-icon>
-            <span style="font-size: 12px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${isNaN(t) ? '--' : t.toFixed(1)}°</span></span>`);
+            <span style="font-size: 12px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${room.temperature.toFixed(1)}°</span></span>`);
         }
-        if (variables.presence) {
-          const here = states[variables.presence]?.state === 'on';
+        if (room.presence) {
+          const here = states[room.presence]?.state === 'on';
           parts.push(`<ha-icon icon="${here ? 'mdi:account' : 'mdi:account-outline'}" title="${here ? 'Presença' : 'Vazio'}"
             style="--mdc-icon-size: 15px; color: ${here ? 'var(--catppuccin-green, #a6da95)' : 'var(--catppuccin-overlay1, #8087a2)'};"></ha-icon>`);
         }
@@ -1109,7 +1151,12 @@ room_card_v2:
         buttons: |
           [[[
             const activeStates = ['on', 'open', 'playing', 'cool', 'dry', 'heat', 'auto', 'fan_only', 'heat_cool'];
-            const list = variables.buttons || [];
+            const room = variables.room;
+            const list = [
+              ...room.lights.map((entity) => ({ entity, icon: states[entity].attributes.icon || 'mdi:lightbulb', kind: 'toggle' })),
+              ...room.climates.map((entity) => ({ entity, icon: 'mdi:air-conditioner', kind: 'ac' })),
+              ...(variables.buttons || []),
+            ];
             if (!list.length) return [{ layout: 'icon', icon: 'mdi:circle-small', styles: { button: { display: 'none' } } }];
             return list.map((b) => {
               const st = states[b.entity]?.state;
@@ -1142,14 +1189,126 @@ room_card_v2:
           ]]]
 
 # ==========================================================================
+# Heading of a pop-up section, like Bubble's separator, shown only when the area holds an entity of `domain` (and
+# `device_class`, if given). Variables: area (id), title, icon, domain, device_class.
+# ==========================================================================
+section_heading:
+  template: area_room
+  variables:
+    title: ""
+    icon: mdi:circle
+    domain: ""
+    device_class: null
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - display: >-
+          [[[ return variables.room.entities.some((id) => id.startsWith(variables.domain + '.')
+                && (!variables.device_class || states[id].attributes.device_class === variables.device_class)) ? 'block' : 'none' ]]]
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+    grid:
+      - grid-template-areas: "'heading'"
+      - grid-template-columns: 1fr
+    custom_fields:
+      heading:
+        - justify-self: stretch
+  custom_fields:
+    heading: |
+      [[[
+        return `<div style="display: flex; align-items: center; gap: 22px; padding: 0 4px;">
+          <ha-icon icon="${variables.icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-text, #cad3f5);"></ha-icon>
+          <span style="font-size: 18px; font-weight: 700; color: var(--catppuccin-text, #cad3f5);">${variables.title}</span>
+          <div style="flex: 1; height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.18);"></div></div>`;
+      ]]]
+
+# ==========================================================================
+# Pop-up header for an area: its icon, name, and under it the temperature and lights on, each only if the area has one.
+# Variables: icon (default: the area's). Tapping the close button leaves the pop-up.
+# ==========================================================================
+room_header:
+  template: area_room
+  variables:
+    icon: null
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+    grid:
+      - grid-template-areas: "'title close'"
+      - grid-template-columns: 1fr 56px
+      - column-gap: 12px
+    custom_fields:
+      title:
+        - justify-self: stretch
+      close:
+        - justify-self: end
+  custom_fields:
+    title: |
+      [[[
+        const room = variables.room;
+        const on = room.lights.filter((id) => states[id]?.state === 'on').length;
+        const info = [
+          room.temperature === null ? null : room.temperature.toFixed(1).replace('.', ',') + ' °C',
+          room.lights.length ? (on ? (on === 1 ? '1 luz acesa' : on + ' luzes acesas') : 'Luzes apagadas') : null,
+        ].filter(Boolean).join(' · ');
+        return `<div style="display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 12px; border-radius: 28px;
+                            background: rgba(24, 25, 38, 0.55); text-align: left;">
+          <div style="width: 42px; height: 42px; border-radius: 50%; background: rgba(36, 39, 58, 0.9); flex: none;
+                      display: flex; align-items: center; justify-content: center;">
+            <ha-icon icon="${variables.icon || room.icon}" style="--mdc-icon-size: 24px; color: var(--catppuccin-lavender, #b7bdf8);"></ha-icon></div>
+          <div style="min-width: 0;"><div style="font-size: 16px; font-weight: 700; color: var(--catppuccin-lavender, #b7bdf8);">${room.name || '--'}</div>
+            ${info ? `<div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">${info}</div>` : ''}</div></div>`;
+      ]]]
+    close:
+      card:
+        type: custom:button-card
+        show_name: false
+        show_icon: false
+        tap_action:
+          action: navigate
+          navigation_path: "[[[ return location.pathname ]]]"
+        styles:
+          card:
+            - width: 56px
+            - height: 56px
+            - padding: 0
+            - border-radius: 50%
+            - border: none
+            - box-shadow: none
+            - background: rgba(24, 25, 38, 0.55)
+          grid:
+            - grid-template-areas: "'x'"
+            - grid-template-columns: 1fr
+            - grid-template-rows: 1fr
+          custom_fields:
+            x:
+              - justify-self: center
+              - align-self: center
+        custom_fields:
+          x: '[[[ return `<ha-icon icon="mdi:close" style="--mdc-icon-size: 26px; color: var(--catppuccin-lavender, #b7bdf8); display: flex;"></ha-icon>` ]]]'
+
+# ==========================================================================
 # AC option row (Modo / Recursos / Ventilação / Direção do ar): one button per value the AC itself
 # reports (hvac_modes, preset_modes, fan_modes, swing_modes); hidden when the AC has none.
 # ==========================================================================
 ac_options:
+  template: ac_device
   variables:
-    climate: ""
     attribute: hvac_mode
-    popup_key: ""
     rows:
       hvac_mode:
         list: hvac_modes
@@ -1215,7 +1374,7 @@ ac_options:
       - border: none
       - padding: 4px 0
       - display: |
-          [[[ return (states[variables.climate]?.attributes?.[variables.rows[variables.attribute].list] || []).length ? 'block' : 'none'; ]]]
+          [[[ return (states[variables.ac.climate]?.attributes?.[variables.rows[variables.attribute].list] || []).length ? 'block' : 'none'; ]]]
     grid:
       - grid-template-areas: "'title' 'row'"
       - row-gap: 10px
@@ -1241,7 +1400,7 @@ ac_options:
         buttons: |
           [[[
             const row = variables.rows[variables.attribute];
-            const c = states[variables.climate];
+            const c = states[variables.ac.climate];
             const current = variables.attribute === 'hvac_mode' ? c?.state : c?.attributes?.[variables.attribute];
             const rank = (v) => { const i = row.order.indexOf(v); return i === -1 ? 99 : i; };
             const list = [...(c?.attributes?.[row.list] || [])].sort((a, b) => rank(a) - rank(b));
@@ -1250,10 +1409,10 @@ ac_options:
               const active = current === value;
               const [label, icon] = row.values[value] || [value, 'mdi:circle-medium'];
               // WindFree Sleep asks for Good Sleep's duration first (chooser pop-up)
-              const tap = variables.attribute === 'preset_mode' && value === 'wind_free_sleep' && variables.popup_key
-                ? { action: 'navigate', navigation_path: `#ac_${variables.popup_key}_sleep` }
+              const tap = variables.attribute === 'preset_mode' && value === 'wind_free_sleep' && variables.ac.area
+                ? { action: 'navigate', navigation_path: `#ac_${variables.ac.area}_sleep` }
                 : { action: 'call-service', service: row.service,
-                    service_data: { entity_id: variables.climate, [variables.attribute]: value } };
+                    service_data: { entity_id: variables.ac.climate, [variables.attribute]: value } };
               return {
                 name: label, icon, layout: 'icon|name', ripple: 'none', tap_action: tap,
                 styles: {
@@ -1270,8 +1429,7 @@ ac_options:
 # Good Sleep extension row (AC pop-up): buttons that add time, shown only while the AC runs Good Sleep
 # ==========================================================================
 ac_sleep_extend:
-  variables:
-    climate: ""
+  template: ac_device
   triggers_update: all
   show_name: false
   show_icon: false
@@ -1284,7 +1442,7 @@ ac_sleep_extend:
       - border: none
       - padding: 4px 0
       - display: |
-          [[[ return states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.climate] ? 'block' : 'none'; ]]]
+          [[[ return states['sensor.ac_good_sleep_ends']?.attributes?.ends?.[variables.ac.climate] ? 'block' : 'none'; ]]]
     grid:
       - grid-template-areas: "'title' 'row'"
       - row-gap: 10px
@@ -1311,7 +1469,7 @@ ac_sleep_extend:
             return [[0.5, '+30 min'], [1, '+1 h'], [2, '+2 h']].map(([hours, label]) => ({
               name: label, icon: 'mdi:timer-plus-outline', layout: 'icon|name', ripple: 'none',
               tap_action: { action: 'call-service', service: 'script.ac_good_sleep_extend',
-                            service_data: { entity_id: variables.climate, hours }, haptic: 'success' },
+                            service_data: { entity_id: variables.ac.climate, hours }, haptic: 'success' },
               styles: {
                 button: { padding: '8px 14px', 'border-radius': '18px', background: 'rgba(73, 77, 100, 0.6)' },
                 name: { 'font-size': '13px', color: 'var(--catppuccin-text, #cad3f5)' },

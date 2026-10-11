@@ -79,9 +79,17 @@ cards:
     card_type: separator
     name: Aparelhos
     icon: mdi:air-conditioner
-  - !include ../cards/ac/main_bedroom.yaml
-  - !include ../cards/ac/office.yaml
-  - !include ../cards/ac/living_room.yaml
-  - !include ../cards/ac/kids_bedroom_1.yaml
-  - !include ../cards/ac/kids_bedroom_2.yaml
-  - !include ../cards/ac/kids_bedroom_3.yaml
+  - type: custom:auto-entities
+    show_empty: false
+    grid_options:
+      columns: full
+      rows: auto
+    card:
+      type: vertical-stack
+    card_param: cards
+    filter:
+      include:
+        - domain: climate
+          options:
+            type: custom:button-card
+            template: ac_card

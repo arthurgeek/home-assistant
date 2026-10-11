@@ -1,5 +1,0 @@
-type: custom:streamline-card
-template: ac_sleep_chooser
-variables:
-  key: kids_bedroom_2
-  climate: climate.kids_bedroom_2_ac
