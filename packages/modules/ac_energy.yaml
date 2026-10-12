@@ -108,6 +108,17 @@ template:
               / ((1 - 0.18) * (1 - 0.068))) | round(4) }}
         availability: "{{ is_number(states('sensor.tarifas_edp_sp_tarifa_vigente')) }}"
 
+      # What the ACs have cost this month: the month's kWh at the current price per kWh (bandeira and taxes included).
+      # The price changes by the month, so it is the bill's figure to within the cents of a mid-month change.
+      - name: AC Energy Month Cost
+        unique_id: ac_energy_month_cost
+        default_entity_id: sensor.ac_energy_month_cost
+        icon: mdi:cash
+        device_class: monetary
+        unit_of_measurement: BRL
+        state: "{{ (states('sensor.ac_energy_month_total') | float * states('sensor.full_energy_price') | float) | round(2) }}"
+        availability: "{{ is_number(states('sensor.ac_energy_month_total')) and is_number(states('sensor.full_energy_price')) }}"
+
       # Lifetime counter of all the ACs together: the Energy dashboard prices this one as its only source
       - name: AC Energy Lifetime Total
         unique_id: ac_energy_lifetime_total
