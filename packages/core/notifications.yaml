@@ -81,6 +81,12 @@ script:
       tag:
         description: Notification tag; a new one with the same tag replaces it, and it can be cleared by tag
         default: ""
+      tts_text:
+        description: With message "TTS", the text the phone speaks (with its own text-to-speech engine)
+        default: ""
+      media_stream:
+        description: With message "TTS", the stream it speaks on; alarm_stream_max raises the alarm volume to the maximum for the message and restores it
+        default: ""
     sequence:
       - variables:
           target_person: "{{ person if person.startswith('person.') else 'person.' ~ person }}"
@@ -134,6 +140,12 @@ script:
             {% if tag is defined and tag %}
               {% set p = dict(p, tag=tag) %}
             {% endif %}
+            {% if tts_text is defined and tts_text %}
+              {% set p = dict(p, tts_text=tts_text) %}
+            {% endif %}
+            {% if media_stream is defined and media_stream %}
+              {% set p = dict(p, media_stream=media_stream) %}
+            {% endif %}
             {{ p }}
       - if:
           - condition: template
@@ -145,6 +157,25 @@ script:
               title: "{{ title }}"
               message: "{{ message }}"
               data: "{{ payload }}"
+
+  ring_phone:
+    alias: Ring Phone
+    description: Makes a person's phone speak a short phrase at full volume, to find it. The companion app speaks with the phone's own text-to-speech engine, on the alarm stream raised to its maximum and restored afterwards
+    icon: mdi:cellphone-sound
+    mode: parallel
+    fields:
+      person:
+        description: Person entity or name whose phone rings
+        example: "person.arthur"
+        required: true
+    sequence:
+      - action: script.notify_person
+        data:
+          person: "{{ person }}"
+          title: ""
+          message: TTS
+          tts_text: I am here! I am here!
+          media_stream: alarm_stream_max
 
   notify_parents:
     alias: Notify Parents
