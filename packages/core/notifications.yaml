@@ -22,7 +22,7 @@ script:
     sequence:
       - variables:
           tts_engine: tts.edge_tts_service_edge_tts
-          announce_volume: 40
+          announce_volume: 65
       - if:
           - condition: template
             value_template: "{{ states(media_player) not in ['unavailable', 'unknown'] }}"
