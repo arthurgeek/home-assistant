@@ -138,3 +138,13 @@ cards:
           action: navigate
           navigation_path: "#calendar"
         styles: *pill
+      - name: Este mês os ACs custaram
+      - entity: sensor.ac_energy_month_cost
+        layout: name
+        name: >-
+          {% if not is_number(states('sensor.ac_energy_month_cost')) %}-- ⚡{% else %}
+          R$ {{ '%.2f' | format(states('sensor.ac_energy_month_cost') | float) | replace('.', ',') }} ⚡{% endif %}
+        tap_action:
+          action: navigate
+          navigation_path: "#climate"
+        styles: *pill
