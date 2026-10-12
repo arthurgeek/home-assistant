@@ -73,6 +73,16 @@ cards:
           name:
             color: var(--catppuccin-base,  #24273a)
             font-weight: 600
+      - name: e dentro
+      - entity: sensor.inside_temperature
+        layout: name
+        name: >-
+          {% if not is_number(states('sensor.inside_temperature')) %}--{% else %}
+          {{ '%.1f' | format(states('sensor.inside_temperature') | float) | replace('.', ',') }}°{% endif %}
+        tap_action:
+          action: navigate
+          navigation_path: "#climate"
+        styles: *pill
       - name: e temos
       - entity: sensor.lights_on
         layout: name

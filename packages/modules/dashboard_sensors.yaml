@@ -16,6 +16,20 @@ template:
           {{ ['ground_floor', 'upper_floor', 'outside'] | map('floor_areas') | sum(start=[]) | map('area_entities')
              | sum(start=[]) | select('match', '^light\\.') | select('is_state', 'on') | list | count }}
 
+      # The temperature inside: the average of what every AC measures in its room
+      - name: Inside Temperature
+        unique_id: inside_temperature
+        default_entity_id: sensor.inside_temperature
+        icon: mdi:home-thermometer
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C"
+        state: >-
+          {{ states.climate | map(attribute='attributes.current_temperature') | select('is_number') | map('float')
+             | list | average | round(1) }}
+        availability: >-
+          {{ states.climate | map(attribute='attributes.current_temperature') | select('is_number') | list | count > 0 }}
+
       - name: ACs On
         unique_id: acs_on
         icon: mdi:air-conditioner
