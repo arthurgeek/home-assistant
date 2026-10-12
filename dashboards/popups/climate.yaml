@@ -5,6 +5,12 @@ name: Climatização
 icon: mdi:air-conditioner
 bg_blur: 16
 cards:
+  # Bubble pre-warms each built-in card type once, from the first sample it meets; this one is valid, where the
+  # auto-entities placeholders below have no cards yet
+  - type: vertical-stack
+    cards:
+      - type: custom:button-card
+        template: nothing
   - type: custom:bubble-card
     card_type: button
     button_type: name
