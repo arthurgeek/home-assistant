@@ -1,0 +1,93 @@
+# ==========================================================================
+# Details of a person for their pop-up: each of their trackers (the router's Wi-Fi presence and the phone's GPS) with
+# its state and how long ago it changed, the phone's battery, and buttons to ring the phone or open the person's map
+# dialog. Variables: person. Everything else is found from the person (see person_device).
+# ==========================================================================
+person_details:
+  template:
+    - base_card
+    - person_device
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - padding: 14px 16px
+    grid:
+      - grid-template-areas: "'rows' 'actions'"
+      - grid-template-columns: 1fr
+      - row-gap: 12px
+    custom_fields:
+      rows:
+        - justify-self: stretch
+      actions:
+        - justify-self: stretch
+  custom_fields:
+    rows: |
+      [[[
+        const who = variables.who;
+        const ago = (iso) => {
+          const sec = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+          const unit = (n, one, many) => `há ${n} ${n === 1 ? one : many}`;
+          if (sec < 60) return 'agora';
+          if (sec < 3600) return unit(Math.floor(sec / 60), 'minuto', 'minutos');
+          if (sec < 86400) return unit(Math.floor(sec / 3600), 'hora', 'horas');
+          return unit(Math.floor(sec / 86400), 'dia', 'dias');
+        };
+        const where = (state) => state === 'home' ? 'Em casa' : state === 'not_home' ? 'Fora' : state;
+        const row = (icon, label, value, color) => `<div style="display: flex; align-items: center; gap: 12px; padding: 6px 0; text-align: left;">
+          <ha-icon icon="${icon}" style="--mdc-icon-size: 20px; color: ${color || 'var(--catppuccin-subtext0, #a5adcb)'}; flex: none;"></ha-icon>
+          <span style="flex: 1; font-size: 14px; color: var(--catppuccin-subtext0, #a5adcb);">${label}</span>
+          <span style="font-size: 14px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${value}</span></div>`;
+        const out = [];
+        for (const t of who.trackers) {
+          const s = states[t];
+          if (!s) continue;
+          const wifi = hass.entities[t]?.platform !== 'mobile_app';
+          out.push(row(wifi ? 'mdi:wifi' : 'mdi:crosshairs-gps', wifi ? 'Wi-Fi da casa' : 'GPS do celular',
+                       `${where(s.state)} · ${ago(s.last_changed)}`,
+                       s.state === 'home' ? 'var(--catppuccin-green, #a6da95)' : null));
+        }
+        const level = parseFloat(states[who.battery]?.state);
+        if (!isNaN(level)) {
+          const charging = ['charging', 'full'].includes(states[who.batteryState]?.state);
+          out.push(row(charging ? 'mdi:battery-charging' : 'mdi:battery', 'Bateria', `${Math.round(level)}%${charging ? ' · carregando' : ''}`,
+                       level >= 50 ? 'var(--catppuccin-green, #a6da95)' : level >= 20 ? 'var(--catppuccin-yellow, #eed49f)' : 'var(--catppuccin-red, #ed8796)'));
+        }
+        return out.join('');
+      ]]]
+    actions:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          justify-content: flex-start
+          gap: 8px
+          flex-wrap: wrap
+        base_config:
+          layout: icon|name
+          ripple: none
+          styles:
+            button:
+              padding: 8px 14px
+              border-radius: 18px
+              background: rgba(73, 77, 100, 0.6)
+            name:
+              color: var(--catppuccin-text,  #cad3f5)
+              font-size: 13px
+        buttons:
+          - icon: mdi:cellphone-sound
+            name: Achar o celular
+            tap_action:
+              action: call-service
+              service: script.ring_phone
+              service_data:
+                person: "[[[ return variables.person ]]]"
+              confirmation:
+                text: Fazer o celular falar em inglês, em volume máximo?
+          - icon: mdi:map-marker
+            name: Mapa
+            tap_action:
+              action: more-info
+              entity: "[[[ return variables.person ]]]"

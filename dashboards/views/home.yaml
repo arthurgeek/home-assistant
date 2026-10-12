@@ -29,6 +29,7 @@ cards:
   - !include ../popups/meds.yaml
   - !include ../popups/rooms.yaml
   - !include ../popups/ac.yaml
+  - !include ../popups/people.yaml
 
   # ========================================================
   # HEADER (greeting + sentence with tappable pills)

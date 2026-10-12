@@ -1,0 +1,24 @@
+# ==========================================================================
+# What a person is made of, for their card and pop-up: their object id, the presence input_select
+# (`input_select.presence_state_<id>`), and, on the phone's device (the mobile app tracker), battery level and state,
+# charger and network type. A card using this template is given `person` and reads `variables.who`.
+# ==========================================================================
+person_device:
+  variables:
+    person: ""
+    who: |-
+      [[[
+        const object = variables.person.split('.')[1];
+        const trackers = states[variables.person]?.attributes?.device_trackers || [];
+        const phone = trackers.find((t) => hass.entities[t]?.platform === 'mobile_app') || trackers[0];
+        const device = hass.entities[phone]?.device_id;
+        const mine = Object.keys(hass.entities).filter((e) => hass.entities[e].device_id === device && states[e]);
+        const find = (re) => mine.find((e) => e.startsWith('sensor.') && re.test(e));
+        return {
+          object, trackers, phone,
+          presence: 'input_select.presence_state_' + object,
+          battery: find(/_battery_level$/), batteryState: find(/_battery_state$/), charger: find(/_charger_type$/),
+          network: find(/_network_type$/),
+        };
+      ]]]
+

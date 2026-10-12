@@ -1,0 +1,27 @@
+# The round close button of a pop-up header: it goes back to the page without the pop-up's hash.
+popup_close:
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: navigate
+    navigation_path: "[[[ return location.pathname ]]]"
+  styles:
+    card:
+      - width: 56px
+      - height: 56px
+      - padding: 0
+      - border-radius: 50%
+      - border: none
+      - box-shadow: none
+      - background: rgba(24, 25, 38, 0.55)
+    grid:
+      - grid-template-areas: "'x'"
+      - grid-template-columns: 1fr
+      - grid-template-rows: 1fr
+    custom_fields:
+      x:
+        - justify-self: center
+        - align-self: center
+  custom_fields:
+    # own markup: button-card's icon sizes wrongly here
+    x: '[[[ return `<ha-icon icon="mdi:close" style="--mdc-icon-size: 26px; color: var(--catppuccin-lavender, #b7bdf8); display: flex;"></ha-icon>` ]]]'

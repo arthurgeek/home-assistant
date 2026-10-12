@@ -1,0 +1,50 @@
+# ==========================================================================
+# Pop-up header for a person: their picture (or initial), name and where they are. Variables: person, color.
+# ==========================================================================
+person_header:
+  template: person_device
+  variables:
+    color: "var(--catppuccin-blue, #8aadf4)"
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  tap_action:
+    action: none
+  styles:
+    card:
+      - background: none
+      - border: none
+      - box-shadow: none
+      - padding: 0
+    grid:
+      - grid-template-areas: "'title close'"
+      - grid-template-columns: 1fr 56px
+      - column-gap: 12px
+    custom_fields:
+      title:
+        - justify-self: stretch
+      close:
+        - justify-self: end
+  custom_fields:
+    title: |
+      [[[
+        const p = states[variables.person];
+        const presence = states[variables.who.presence]?.state;
+        const zone = p && !['home', 'not_home', 'unknown', 'unavailable'].includes(p.state) ? p.state : null;
+        const where = {
+          'Just Arrived': 'Acabou de chegar', 'Home': 'Em casa', 'Just Left': 'Acabou de sair',
+          'Away': zone || 'Fora', 'Extended Away': 'Viajando',
+        }[presence] || (p?.state === 'home' ? 'Em casa' : (zone || 'Fora'));
+        const pic = p?.attributes?.entity_picture;
+        const face = pic
+          ? `<img src="${pic}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none;">`
+          : `<div style="width: 42px; height: 42px; border-radius: 50%; background: ${variables.color}; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--catppuccin-base, #24273a);">${(p?.attributes?.friendly_name || '?').charAt(0)}</div>`;
+        return `<div style="display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 12px; border-radius: 28px;
+                            background: rgba(24, 25, 38, 0.55); text-align: left;">${face}
+          <div style="min-width: 0;"><div style="font-size: 16px; font-weight: 700; color: var(--catppuccin-lavender, #b7bdf8);">${p?.attributes?.friendly_name || '--'}</div>
+            <div style="font-size: 13px; color: var(--catppuccin-subtext0, #a5adcb);">${where}</div></div></div>`;
+      ]]]
+    close:
+      card:
+        type: custom:button-card
+        template: popup_close

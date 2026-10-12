@@ -1,0 +1,13 @@
+# One pop-up per person, built from the person entity (streamline_templates: person_popup).
+type: vertical-stack
+cards:
+  - type: custom:streamline-card
+    template: person_popup
+    variables:
+      key: arthur
+      color: "var(--catppuccin-blue, #8aadf4)"
+  - type: custom:streamline-card
+    template: person_popup
+    variables:
+      key: suellen
+      color: "var(--catppuccin-pink, #f5bde6)"

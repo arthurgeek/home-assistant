@@ -1,0 +1,32 @@
+# Pop-up of a person. Variables: key (the person's object id, e.g. arthur), color. The header, the details (trackers,
+# battery, ring the phone) and the map are found from the person entity.
+person_popup:
+  default:
+    - color: "var(--catppuccin-blue, #8aadf4)"
+  card:
+    type: custom:bubble-card
+    card_type: pop-up
+    hash: "#person_[[key]]"
+    show_header: false
+    bg_blur: 16
+    cards:
+      - type: vertical-stack
+        cards:
+          - type: custom:button-card
+            template: person_header
+            variables:
+              person: person.[[key]]
+              color: "[[color]]"
+      - type: custom:button-card
+        template: person_details
+        variables:
+          person: person.[[key]]
+      - type: map
+        entities:
+          - person.[[key]]
+        default_zoom: 15
+        hours_to_show: 0
+        aspect_ratio: "16:11"
+        card_mod:
+          style: |-
+            ha-card { background: rgba(36, 39, 58, 0.7); border-radius: 24px; border: 1px solid rgba(202, 211, 245, 0.08); overflow: hidden; }

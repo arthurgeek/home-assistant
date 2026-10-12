@@ -1,21 +1,22 @@
 # ==========================================================================
 # Person card: avatar + status badge, phone chips, relative time
-# Variables: person (person entity), presence (input_select with the presence state), color, phone (object-id
-# prefix of the phone's sensors, e.g. suellens_phone).
+# Variables: person (person entity), color. The presence state and the phone's sensors are found from the person (see
+# person_device). A tap opens the person's pop-up.
 # ==========================================================================
 person_card:
   template:
     - base_card
     - anim
+    - person_device
   variables:
-    person: ""
-    presence: ""
     color: "var(--catppuccin-blue, #8aadf4)"
-    phone: ""  # object-id prefix of the phone sensors, e.g. suellens_phone
   triggers_update: all
   show_name: false
   show_icon: false
   tap_action:
+    action: navigate
+    navigation_path: "[[[ return '#person_' + variables.who.object ]]]"
+  hold_action:
     action: more-info
     entity: "[[[ return variables.person ]]]"
   styles:
@@ -50,7 +51,7 @@ person_card:
     avatar: |
       [[[
         const p = states[variables.person];
-        const presence = states[variables.presence]?.state;
+        const presence = states[variables.who.presence]?.state;
         const home = presence ? ['Home', 'Just Arrived'].includes(presence) : p?.state === 'home';
         const badge = {
           'Just Arrived': ['mdi:home-import-outline', 'var(--catppuccin-green, #a6da95)'],
@@ -74,7 +75,7 @@ person_card:
     status: |
       [[[
         const p = states[variables.person];
-        const presence = states[variables.presence]?.state;
+        const presence = states[variables.who.presence]?.state;
         const zone = p && !['home', 'not_home', 'unknown', 'unavailable'].includes(p.state) ? p.state : null;
         let text = {
           'Just Arrived': 'Acabou de chegar', 'Home': 'Em casa', 'Just Left': 'Acabou de sair',
@@ -89,19 +90,19 @@ person_card:
         const chip = (inner) => `<div style="display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 14px; background: rgba(73, 77, 100, 0.55); font-size: 12px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${inner}</div>`;
         const icon = (i, c) => `<ha-icon icon="${i}" style="--mdc-icon-size: 16px; color: ${c};"></ha-icon>`;
         const out = [];
-        const lvl = parseFloat(states[`sensor.${variables.phone}_battery_level`]?.state);
+        const lvl = parseFloat(states[variables.who.battery]?.state);
         if (!isNaN(lvl)) {
           const step = Math.round(lvl / 10) * 10;
           const bi = step >= 100 ? 'mdi:battery' : step < 10 ? 'mdi:battery-outline' : `mdi:battery-${step}`;
           const bc = lvl >= 50 ? 'var(--catppuccin-green, #a6da95)' : lvl >= 20 ? 'var(--catppuccin-yellow, #eed49f)' : 'var(--catppuccin-red, #ed8796)';
           out.push(chip(`${icon(bi, bc)}${Math.round(lvl)}%`));
         }
-        const bs = states[`sensor.${variables.phone}_battery_state`]?.state;
+        const bs = states[variables.who.batteryState]?.state;
         if (bs) {
           const charging = ['charging', 'full'].includes(bs);
           out.push(chip(icon(charging ? 'mdi:power-plug' : 'mdi:power-plug-off', charging ? 'var(--catppuccin-blue, #8aadf4)' : 'var(--catppuccin-overlay1, #8087a2)')));
         }
-        const net = states[`sensor.${variables.phone}_network_type`]?.state;
+        const net = states[variables.who.network]?.state;
         if (net && !['unknown', 'unavailable'].includes(net)) {
           out.push(chip(net === 'wifi'
             ? icon('mdi:wifi', 'var(--catppuccin-green, #a6da95)')

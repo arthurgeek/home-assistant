@@ -37,9 +37,7 @@ cards:
       place-self: start stretch  # its natural 160px, level with the AC card, not the taller desktop row
     variables:
       person: person.arthur
-      presence: input_select.presence_state_arthur
       color: "var(--catppuccin-blue, #8aadf4)"
-      phone: arthur_s_phone_arthurs_phone
 
   - type: custom:button-card
     template: person_card
@@ -48,9 +46,7 @@ cards:
       place-self: start stretch  # its natural 160px, level with the AC card, not the taller desktop row
     variables:
       person: person.suellen
-      presence: input_select.presence_state_suellen
       color: "var(--catppuccin-pink, #f5bde6)"
-      phone: suellens_phone
 
   # --- Main door: tap unlocks, hold opens the door pop-up -------------------------
   - type: custom:button-card
