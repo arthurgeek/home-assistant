@@ -1,0 +1,120 @@
+# ==========================================================================
+# Appliance card (washer, dryer, dishwasher): what it is doing, how long is left with a progress bar, and the buttons
+# its device allows. The card's entity is the appliance's `*_current_status` sensor; the rest (power switch, remaining
+# and total time, remote-start flag, operation select) are found on the same device, and the name follows the sensor (Lavadora, Secadora, Lava-louças).
+# ==========================================================================
+appliance_card:
+  template:
+    - base_card
+  triggers_update: all
+  show_name: false
+  show_icon: false
+  show_state: false
+  variables:
+    appliance: |
+      [[[
+        const id = entity.entity_id;
+        const device = hass.entities[id]?.device_id;
+        const mine = Object.keys(hass.entities).filter((e) => hass.entities[e].device_id === device && states[e]);
+        const find = (domain, test) => mine.find((e) => e.startsWith(domain + '.') && test(e));
+        const status = entity.state;
+        const label = {
+          power_off: 'Desligada', initial: 'Pronta', reserved: 'Agendada', end: 'Concluída', error: 'Erro',
+          pause: 'Pausada', running: 'Em uso', detecting: 'Detectando a carga', refreshing: 'Em uso', cool_down: 'Resfriando',
+          cooling: 'Resfriando', rinsing: 'Enxaguando', rinse_hold: 'Enxágue em espera', spinning: 'Centrifugando',
+          drying: 'Secando', dispensing: 'Dosando', steam_softening: 'Vapor', wrinkle_care: 'Anti-amassado',
+        }[status] || '--';
+        const remainingAt = find('sensor', (e) => states[e].attributes.device_class === 'timestamp' && /remaining/.test(e));
+        const total = parseFloat(states[find('sensor', (e) => states[e].attributes.device_class === 'duration')]?.state);
+        const ends = remainingAt ? Date.parse(states[remainingAt].state) : NaN;
+        const minutes = isNaN(ends) ? null : Math.max(0, Math.round((ends - Date.now()) / 60000));
+        const running = !['power_off', 'end', 'initial', 'error', 'reserved'].includes(status);
+        return {
+          status, label, minutes, running,
+          progress: running && minutes !== null && total > 0 ? Math.min(1, Math.max(0, 1 - minutes / total)) : null,
+          power: find('switch', () => true),
+          operation: find('select', (e) => /_operation$/.test(e)),
+          remote: find('binary_sensor', (e) => /remote_start$/.test(e)),
+          // a washer and a dryer can share one device (a tower), so the name follows the sensor
+          name: /dryer/.test(id) ? 'Secadora' : /dish/.test(id) ? 'Lava-louças' : /washer/.test(id) ? 'Lavadora' : (hass.devices[device]?.name || entity.attributes.friendly_name),
+          icon: /dryer/.test(id) ? 'mdi:tumble-dryer' : /dish/.test(id) ? 'mdi:dishwasher' : 'mdi:washing-machine',
+        };
+      ]]]
+  tap_action:
+    action: more-info
+  styles:
+    card:
+      - padding: 14px 16px
+      - overflow: hidden
+    grid:
+      - grid-template-areas: "'badge text btn' 'bar bar bar'"
+      - grid-template-columns: min-content 1fr min-content
+      - grid-template-rows: auto auto
+      - column-gap: 14px
+      - row-gap: 10px
+    custom_fields:
+      badge:
+        - align-self: center
+      text:
+        - justify-self: stretch
+        - min-width: 0
+      btn:
+        - align-self: center
+      bar:
+        - justify-self: stretch
+        - display: "[[[ return variables.appliance.progress === null ? 'none' : 'block' ]]]"
+  custom_fields:
+    badge: |
+      [[[
+        const a = variables.appliance;
+        const bg = a.running ? 'var(--catppuccin-blue, #8aadf4)' : 'rgba(73, 77, 100, 0.6)';
+        const fg = a.running ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)';
+        return `<div style="width: 44px; height: 44px; border-radius: 50%; background: ${bg}; display: flex; align-items: center; justify-content: center;">
+          <ha-icon icon="${a.icon}" style="--mdc-icon-size: 24px; color: ${fg};"></ha-icon></div>`;
+      ]]]
+    text: |
+      [[[
+        const a = variables.appliance;
+        const left = a.running && a.minutes !== null
+          ? ` · ${a.minutes >= 60 ? Math.floor(a.minutes / 60) + 'h' + String(a.minutes % 60).padStart(2, '0') : a.minutes + ' min'}` : '';
+        return `<div style="text-align: left;">
+          <div style="font-size: 15px; font-weight: 600; color: var(--catppuccin-text, #cad3f5);">${a.name}</div>
+          <div style="font-size: 12px; margin-top: 3px; color: var(--catppuccin-subtext0, #a5adcb);">${a.label}${left}</div></div>`;
+      ]]]
+    bar: |
+      [[[
+        const a = variables.appliance;
+        const pct = Math.round((a.progress ?? 0) * 100);
+        return `<div style="height: 6px; border-radius: 3px; background: rgba(73, 77, 100, 0.6); overflow: hidden;">
+          <div style="width: ${pct}%; height: 100%; border-radius: 3px; background: var(--catppuccin-blue, #8aadf4);"></div></div>`;
+      ]]]
+    btn:
+      card:
+        type: custom:paper-buttons-row
+        styles:
+          padding: 0
+          margin: 0
+          gap: 8px
+        buttons: |-
+          [[[
+            const a = variables.appliance;
+            const button = (icon, tap, active) => ({
+              icon, layout: 'icon', ripple: 'circle', tap_action: tap,
+              styles: {
+                button: { width: '40px', height: '40px', padding: '0', 'border-radius': '50%',
+                          background: active ? 'var(--catppuccin-blue, #8aadf4)' : 'rgba(73, 77, 100, 0.7)' },
+                icon: { color: active ? 'var(--catppuccin-base, #24273a)' : 'var(--catppuccin-text, #cad3f5)', '--mdc-icon-size': '20px' },
+              },
+            });
+            const out = [];
+            const select = (option) => ({ action: 'call-service', service: 'select.select_option',
+                                          service_data: { entity_id: a.operation, option } });
+            // start or stop only when the appliance accepts remote commands
+            if (a.operation && states[a.remote]?.state === 'on') {
+              out.push(a.running ? button('mdi:stop', select('stop'), false) : button('mdi:play', select('start'), false));
+            }
+            if (a.power) {
+              out.push(button('mdi:power', { action: 'toggle', entity: a.power }, states[a.power]?.state === 'on'));
+            }
+            return out.length ? out : [{ layout: 'icon', icon: 'mdi:circle-small', styles: { button: { display: 'none' } } }];
+          ]]]

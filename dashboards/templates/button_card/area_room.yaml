@@ -1,6 +1,6 @@
 # ==========================================================================
 # What an area holds, for the room card, pop-up header and presence section: its name, icon and temperature (the area's
-# temperature sensor, else its AC's reading), and the lights, ACs and occupancy sensor placed in it, directly or through
+# temperature sensor, else its AC's reading), and the lights, ACs, appliances (the `*_current_status` sensors of washers and the like) and occupancy sensor placed in it, directly or through
 # their device. A card using this template is given `area` (id) and reads `variables.room`.
 # ==========================================================================
 area_room:
@@ -21,6 +21,7 @@ area_room:
         return {
           name: area.name, icon: area.icon || 'mdi:sofa',
           entities: ids, lights: of('light'), climates,
+          appliances: ids.filter((id) => /^sensor\..*_current_status$/.test(id)),
           temperature: isNaN(temperature) ? null : temperature,
           presence: ids.find((id) => id.startsWith('binary_sensor.') && states[id].attributes.device_class === 'occupancy'),
         };

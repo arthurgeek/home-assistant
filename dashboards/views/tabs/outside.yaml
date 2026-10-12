@@ -54,8 +54,3 @@ cards:
     variables:
       area: laundry_area
       circle_color: "var(--catppuccin-blue, #8aadf4)"
-      subtitle: |-
-        [[[
-          const label = (s) => ({power_off: 'desligada', end: 'concluída', unknown: '--', unavailable: '--'}[s] ?? 'em uso');
-          return `Lav. ${label(states['sensor.washer_current_status']?.state)} · Sec. ${label(states['sensor.dryer_current_status']?.state)}`;
-        ]]]

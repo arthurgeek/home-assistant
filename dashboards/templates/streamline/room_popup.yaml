@@ -105,5 +105,29 @@ room_popup:
                     variables:
                       area: "[[key]]"
                       climate: this.entity_id
+      - type: custom:button-card
+        template: section_heading
+        variables:
+          area: "[[key]]"
+          title: Aparelhos
+          icon: mdi:washing-machine
+          domain: sensor
+          match: _current_status$
+      - type: custom:auto-entities
+        show_empty: false
+        grid_options:
+          columns: full
+          rows: auto
+        card:
+          type: vertical-stack
+        card_param: cards
+        filter:
+          include:
+            - area: "[[key]]"
+              domain: sensor
+              entity_id: "*_current_status"
+              options:
+                type: custom:button-card
+                template: appliance_card
       - type: vertical-stack
         cards: "[[extra_content]]"

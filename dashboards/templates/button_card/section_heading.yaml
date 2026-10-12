@@ -1,7 +1,7 @@
 # ==========================================================================
 # Heading of a pop-up section, like Bubble's separator, shown only when the area (or floor) holds an entity of `domain`
 # (and `device_class`, if given). Variables: area (id) or floor (id; its name and icon are the heading's), title, icon,
-# domain, device_class.
+# domain, device_class, match (a regular expression the entity id must match).
 # ==========================================================================
 section_heading:
   variables:
@@ -11,6 +11,7 @@ section_heading:
     icon: mdi:circle
     domain: ""
     device_class: null
+    match: null
   triggers_update: all
   show_name: false
   show_icon: false
@@ -26,7 +27,7 @@ section_heading:
               return variables.floor ? hass.areas[area]?.floor_id === variables.floor : area === variables.area;
             };
             const found = Object.keys(hass.entities).some((id) => states[id] && !hass.entities[id].hidden && scope(id)
-              && id.startsWith(variables.domain + '.')
+              && id.startsWith(variables.domain + '.') && (!variables.match || new RegExp(variables.match).test(id))
               && (!variables.device_class || states[id].attributes.device_class === variables.device_class));
             return found ? 'block' : 'none';
           ]]]
