@@ -2,21 +2,23 @@ type: custom:layout-card
 layout_type: custom:grid-layout
 layout:
   grid-template-columns: 1fr 1fr
-  grid-template-rows: auto 110px 150px  # the street lights tile: 110px, as the tiles on Casa
+  grid-template-rows: auto 110px 150px auto  # the street lights tile: 110px, as the tiles on Casa
   grid-gap: 10px
   margin: 8px 0 0 0
   grid-template-areas: |
     "camera camera"
     "street street"
     "garage laundry"
+    "cams cams"
   mediaquery:
     "(min-width: 900px)":
       grid-template-columns: 2fr 1fr 1fr
       # the street lights tile keeps its 110px beside the camera instead of stretching to the camera's height
-      grid-template-rows: 110px auto
+      grid-template-rows: 110px auto auto
       grid-template-areas: |
         "camera street street"
         "camera garage laundry"
+        "cams cams cams"
 cards:
   - type: vertical-stack
     view_layout:
@@ -54,3 +56,35 @@ cards:
     variables:
       area: laundry_area
       circle_color: "var(--catppuccin-blue, #8aadf4)"
+
+  # The other cameras outside, found from the outside floor: one live view each, a column on the phone and
+  # side by side from the width of two. No go2rtc: they have no microphone or speaker, so Home Assistant's own
+  # UniFi Protect stream is enough.
+  - type: custom:auto-entities
+    show_empty: false
+    view_layout:
+      grid-area: cams
+    card:
+      type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))
+        grid-gap: 10px
+    card_param: cards
+    filter:
+      include:
+        - floor: outside
+          domain: camera
+          options:
+            eval_js: true  # so the title can be the device's name
+            type: custom:advanced-camera-card
+            cameras:
+              - camera_entity: this.entity_id
+                live_provider: ha
+                title: ${device}
+            live:
+              lazy_load: true
+              preload: false
+            dimensions:
+              aspect_ratio_mode: static
+              aspect_ratio: "16:9"
