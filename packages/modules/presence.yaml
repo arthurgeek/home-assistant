@@ -30,6 +30,17 @@ template:
           {% set vacuum_active = states('vacuum.roborock') in ['cleaning', 'returning'] %}
           {{ radar and not vacuum_active }}
 
+      # The kitchen opens onto the living room, so the same vacuum runs through it. Its raw radar is class motion
+      # and this sensor is the kitchen's occupancy sensor, like living_room_presence above.
+      - name: "Kitchen Presence"
+        unique_id: kitchen_presence
+        device_class: occupancy
+        icon: mdi:motion-sensor
+        state: >-
+          {% set radar = is_state('binary_sensor.kitchenpresencesensor_presence', 'on') %}
+          {% set vacuum_active = states('vacuum.roborock') in ['cleaning', 'returning'] %}
+          {{ radar and not vacuum_active }}
+
       # Any occupancy sensor in an area of a floor. The street has no floor (the doorbell is class occupancy), this
       # sensor is in no area, and the raw living room radar is class motion: living_room_presence above is the
       # living room's occupancy sensor.
