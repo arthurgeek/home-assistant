@@ -6,13 +6,13 @@ layout:
   grid-gap: 10px
   margin: 8px 0 0 0
   grid-template-areas: |
-    "living_room living_room"
+    "living_room kitchen"
   mediaquery:
     "(min-width: 900px)":
       grid-template-columns: 2fr 1fr 1fr
       grid-template-rows: 220px
       grid-template-areas: |
-        "living_room . ."
+        "living_room kitchen ."
 cards:
   - type: custom:button-card
     template: room_card_v2
@@ -30,3 +30,12 @@ cards:
         - icon: mdi:television
           entity: media_player.tv_samsung_6_series_55
           kind: toggle
+
+  # The kitchen opens onto the living room; its own card carries its presence sensor
+  - type: custom:button-card
+    template: room_card_v2
+    view_layout:
+      grid-area: kitchen
+    variables:
+      area: kitchen
+      circle_color: "var(--catppuccin-teal, #8bd5ca)"

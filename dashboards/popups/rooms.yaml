@@ -23,6 +23,10 @@ cards:
   - type: custom:streamline-card
     template: room_popup
     variables:
+      key: kitchen
+  - type: custom:streamline-card
+    template: room_popup
+    variables:
       key: office
   - type: custom:streamline-card
     template: room_popup
