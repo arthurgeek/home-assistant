@@ -86,8 +86,9 @@ automation:
   - id: meds_reminder
     alias: Meds · Reminder
     description: >-
-      At each dose time, reminds Arthur every 15 minutes until taken; gives up after 2h. Snooze waits an hour and
-      pushes the give-up out by an hour. After 4 reminders ignored in a row, also speaks in the living room if home.
+      At each dose time, reminds Arthur every 15 minutes until taken; stops reminding after 2h, but a Tomei press
+      still counts the dose at any time. Snooze waits an hour and pushes the give-up out by an hour. After 4
+      reminders ignored in a row, also speaks in the living room if home.
     mode: queued
     triggers:
       - trigger: time
@@ -172,10 +173,13 @@ automation:
                 data:
                   person: person.arthur
                   title: "💊 Remédio {{ label }} não tomado"
-                  message: "Parei de lembrar. Se tomou, marque no painel."
+                  message: "Parei de lembrar. Quando tomar, marque aqui ou no painel."
                   tag: meds
                   importance: low
                   notification_icon: mdi:pill-off
+                  actions:
+                    - action: MEDS_TAKEN
+                      title: Tomei
             else:
               - action: script.notify_person
                 data:
